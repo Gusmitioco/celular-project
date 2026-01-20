@@ -14,7 +14,7 @@ Monorepo:
 
 1) Clone + enter the folder
 git clone <your-repo-url>
-cd techfix
+cd celular-project
 
 
 2) Start Postgres with Docker
