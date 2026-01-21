@@ -1,15 +1,14 @@
 import "./global.css";
 import type { ReactNode } from "react";
-
-export const metadata = {
-  title: "TechFix",
-  description: "Assistência técnica"
-};
+import { Header } from "../components/Header";
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
     <html lang="pt-BR">
-      <body>{children}</body>
+      <body>
+        <Header />
+        {children}
+      </body>
     </html>
   );
 }

@@ -42,80 +42,71 @@ export function ServiceSelector({ citySlug, brandSlug, modelId, services }: Prop
 
   return (
     <div style={{ marginTop: 16 }}>
-      {services.map((s) => {
-        const checked = selected.has(s.id);
-        return (
-          <div
-            key={s.id}
-            style={{
-              border: "1px solid #ddd",
-              borderRadius: 12,
-              padding: 14,
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: 12,
-            }}
-          >
-            <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
-              <input type="checkbox" checked={checked} onChange={() => toggle(s.id)} />
-              <div>
-                <div style={{ fontWeight: 600 }}>{s.service}</div>
-                <div style={{ fontSize: 12, opacity: 0.7 }}>
-                  {s.storeCount} assistências oferecem
+      <div className="surface" style={{ padding: 16 }}>
+        <div className="grid" style={{ gap: 12 }}>
+          {services.map((s) => {
+            const checked = selected.has(s.id);
+            return (
+              <div
+                key={s.id}
+                style={{
+                  border: "1px solid var(--border)",
+                  borderRadius: "var(--radius)",
+                  padding: 14,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                }}
+              >
+                <label style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <input type="checkbox" checked={checked} onChange={() => toggle(s.id)} />
+                  <div>
+                    <div className="cardTitle">{s.service}</div>
+                    <div className="cardMeta">{s.storeCount} assistências oferecem</div>
+                  </div>
+                </label>
+
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ fontWeight: 900 }}>{formatBRLFromCents(s.minPriceCents)}</div>
+                  {s.maxPriceCents !== s.minPriceCents && (
+                    <div className="cardMeta">até {formatBRLFromCents(s.maxPriceCents)}</div>
+                  )}
                 </div>
               </div>
-            </label>
-
-            <div style={{ textAlign: "right" }}>
-              <div style={{ fontWeight: 700 }}>{formatBRLFromCents(s.minPriceCents)}</div>
-              {s.maxPriceCents !== s.minPriceCents && (
-                <div style={{ fontSize: 12, opacity: 0.7 }}>
-                  até {formatBRLFromCents(s.maxPriceCents)}
-                </div>
-              )}
-            </div>
-          </div>
-        );
-      })}
-
-      <div
-        style={{
-          borderTop: "1px solid #eee",
-          paddingTop: 12,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 12,
-        }}
-      >
-        <div>
-          <div style={{ fontSize: 12, opacity: 0.7 }}>Total mínimo</div>
-          <div style={{ fontWeight: 800, fontSize: 18 }}>{formatBRLFromCents(minTotal)}</div>
+            );
+          })}
         </div>
 
-        <div style={{ display: "flex", gap: 10 }}>
-          <Link
-            href={`/city/${citySlug}/brand/${brandSlug}`}
-            style={{ textDecoration: "none", padding: "10px 12px", border: "1px solid #ddd", borderRadius: 10 }}
-          >
-            Voltar
-          </Link>
+        <div
+          style={{
+            borderTop: "1px solid var(--border)",
+            marginTop: 14,
+            paddingTop: 14,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 12,
+          }}
+        >
+          <div>
+            <div className="cardMeta">Total mínimo</div>
+            <div style={{ fontWeight: 900, fontSize: 20 }}>{formatBRLFromCents(minTotal)}</div>
+          </div>
 
-          <button
-            onClick={goCheckout}
-            disabled={selectedIds.length === 0}
-            style={{
-              padding: "10px 12px",
-              borderRadius: 10,
-              border: "1px solid #111",
-              background: selectedIds.length === 0 ? "#eee" : "#111",
-              color: selectedIds.length === 0 ? "#777" : "white",
-              cursor: selectedIds.length === 0 ? "not-allowed" : "pointer",
-            }}
-          >
-            Continuar
-          </button>
+          <div className="btnRow">
+            <Link href={`/city/${citySlug}/brand/${brandSlug}`} className="btn">
+              Voltar
+            </Link>
+
+            <button
+              onClick={goCheckout}
+              disabled={selectedIds.length === 0}
+              className={`btn btnPrimary ${selectedIds.length === 0 ? "btnDisabled" : ""}`}
+              type="button"
+            >
+              Continuar
+            </button>
+          </div>
         </div>
       </div>
     </div>

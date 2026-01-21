@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { apiGet } from "../../../lib/api";
 import type { BrandItem, CityItem } from "../../../types";
+import { Stepper } from "../../../components/Stepper";
 
 type Props = {
   params: Promise<{ citySlug: string }>;
@@ -14,11 +15,16 @@ export default async function CityPage({ params }: Props) {
 
   if (!selectedCity) {
     return (
-      <main style={{ maxWidth: 720 }}>
-        <pre>{JSON.stringify({ citySlug }, null, 2)}</pre>
-        <h1>Cidade não encontrada</h1>
-        <p>Slug: {citySlug}</p>
-        <Link href="/">Voltar</Link>
+      <main className="container">
+        <Stepper activeIndex={1} />
+        <div className="btnRow" style={{ marginTop: 6 }}>
+          <Link href="/" className="btn">
+            ← Voltar
+          </Link>
+        </div>
+
+        <h1 className="h2">Cidade não encontrada</h1>
+        <p className="sub">Slug: {citySlug}</p>
       </main>
     );
   }
@@ -28,36 +34,39 @@ export default async function CityPage({ params }: Props) {
   );
 
   return (
-    <main style={{ maxWidth: 720 }}>
-      <h1>{selectedCity.city}</h1>
-      <p style={{ opacity: 0.8 }}>Selecione a marca do seu aparelho</p>
+    <main className="container">
+      <Stepper activeIndex={1} />
+
+      <div className="btnRow" style={{ marginTop: 6 }}>
+        <Link href="/" className="btn">
+          ← Trocar cidade
+        </Link>
+      </div>
+
+      <h1 className="h2">Selecione a marca</h1>
+      <p className="sub">Escolha a marca do seu celular</p>
 
       {brands.length === 0 ? (
-        <p>Nenhuma marca encontrada nessa cidade.</p>
+        <div className="surface" style={{ padding: 16 }}>
+          <p style={{ margin: 0 }}>Nenhuma marca encontrada nessa cidade.</p>
+        </div>
       ) : (
-        <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+        <div className="grid grid-2" style={{ marginTop: 14 }}>
           {brands.map((b) => (
             <Link
               key={b.slug}
               href={`/city/${citySlug}/brand/${b.slug}`}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: 12,
-                padding: 16,
-                textDecoration: "none",
-                color: "inherit",
-              }}
+              className="cardLink"
             >
-              <div style={{ fontWeight: 600 }}>{b.brand}</div>
-              <div style={{ fontSize: 12, opacity: 0.7 }}>{b.slug}</div>
+              <div>
+                <div className="cardTitle">{b.brand}</div>
+                <div className="cardMeta">Ver modelos disponíveis</div>
+              </div>
+              <div className="chev">›</div>
             </Link>
           ))}
         </div>
       )}
-
-      <div style={{ marginTop: 16 }}>
-        <Link href="/">← Trocar cidade</Link>
-      </div>
     </main>
   );
 }

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { apiGet } from "../../../../../lib/api";
-import type { CityItem, BrandItem, ModelItem } from "../../../../../types";
+import type { BrandItem, CityItem, ModelItem } from "../../../../../types";
+import { Stepper } from "../../../../../components/Stepper";
 
 type Props = {
   params: Promise<{ citySlug: string; brandSlug: string }>;
@@ -9,7 +10,6 @@ type Props = {
 export default async function BrandPage({ params }: Props) {
   const { citySlug, brandSlug } = await params;
 
-  // Optional: fetch names for nicer titles
   const cities = await apiGet<CityItem[]>("/cities");
   const selectedCity = cities.find((c) => c.slug === citySlug);
 
@@ -21,40 +21,37 @@ export default async function BrandPage({ params }: Props) {
   );
 
   return (
-    <main style={{ maxWidth: 720 }}>
-      <div style={{ marginBottom: 8 }}>
-        <Link href={`/city/${citySlug}`}>← Voltar</Link>
+    <main className="container">
+      <Stepper activeIndex={2} />
+
+      <div className="btnRow" style={{ marginTop: 6 }}>
+        <Link href={`/city/${citySlug}`} className="btn">
+          ← Voltar
+        </Link>
       </div>
 
-      <h1>{selectedBrand?.brand ?? brandSlug}</h1>
-      <p style={{ opacity: 0.8 }}>
-        {selectedCity?.city ? `Cidade: ${selectedCity.city}` : "Selecione o modelo"}
+      <h1 className="h2">{selectedBrand?.brand ?? brandSlug}</h1>
+      <p className="sub">
+        {selectedCity?.city ? `Cidade: ${selectedCity.city}` : "Selecione o modelo do seu aparelho"}
       </p>
 
       {models.length === 0 ? (
-        <p>Nenhum modelo encontrado para essa marca nessa cidade.</p>
+        <div className="surface" style={{ padding: 16 }}>
+          <p style={{ margin: 0 }}>Nenhum modelo encontrado para essa marca nessa cidade.</p>
+        </div>
       ) : (
-        <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
+        <div className="grid" style={{ marginTop: 14 }}>
           {models.map((m) => (
             <Link
               key={m.id}
               href={`/city/${citySlug}/brand/${brandSlug}/model/${m.id}`}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: 12,
-                padding: 16,
-                textDecoration: "none",
-                color: "inherit",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-              }}
+              className="cardLink"
             >
               <div>
-                <div style={{ fontWeight: 600 }}>{m.model}</div>
-                <div style={{ fontSize: 12, opacity: 0.7 }}>Ver serviços disponíveis</div>
+                <div className="cardTitle">{m.model}</div>
+                <div className="cardMeta">Ver serviços disponíveis</div>
               </div>
-              <div style={{ fontSize: 18, opacity: 0.5 }}>›</div>
+              <div className="chev">›</div>
             </Link>
           ))}
         </div>

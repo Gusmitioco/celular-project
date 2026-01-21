@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { apiGet } from "../../../../../../../../lib/api";
 import { formatBRLFromCents } from "../../../../../../../../lib/format";
+import { Stepper } from "../../../../../../../../components/Stepper";
+import type { ServiceItem } from "../../../../../../../../types";
 
 type Props = {
   params: Promise<{ citySlug: string; brandSlug: string; modelId: string }>;
@@ -21,83 +23,83 @@ export default async function CheckoutPage({ params, searchParams }: Props) {
   const { serviceIds } = await searchParams;
 
   const serviceIdsStr = (serviceIds ?? "").trim();
-  const selected = serviceIdsStr
+  const selectedIds = serviceIdsStr
     .split(",")
     .map((x) => Number(x.trim()))
     .filter((n) => Number.isFinite(n));
 
-  if (selected.length === 0) {
+  if (selectedIds.length === 0) {
     return (
-      <main style={{ maxWidth: 720 }}>
-        <h1>Escolha a Assistência</h1>
-        <p>Nenhum serviço selecionado.</p>
-        <Link href={`/city/${citySlug}/brand/${brandSlug}/model/${modelId}`}>← Voltar</Link>
+      <main className="container">
+        <Stepper activeIndex={4} />
+        <h1 className="h2">Escolha a assistência</h1>
+        <p className="sub">Nenhum serviço selecionado.</p>
+        <Link href={`/city/${citySlug}/brand/${brandSlug}/model/${modelId}`} className="btn">
+          ← Voltar
+        </Link>
       </main>
     );
   }
 
+  // Fetch all services for this city+model and filter to selected to show a summary
+  const allServices = await apiGet<ServiceItem[]>(
+    `/services?citySlug=${encodeURIComponent(citySlug)}&modelId=${encodeURIComponent(modelId)}`
+  );
+  const selectedServices = allServices.filter((s) => selectedIds.includes(s.id));
+  const minTotal = selectedServices.reduce((acc, s) => acc + s.minPriceCents, 0);
+
   const stores = await apiGet<StoreOption[]>(
     `/stores?citySlug=${encodeURIComponent(citySlug)}&modelId=${encodeURIComponent(
       modelId
-    )}&serviceIds=${encodeURIComponent(selected.join(","))}`
+    )}&serviceIds=${encodeURIComponent(selectedIds.join(","))}`
   );
 
   return (
-    <main style={{ maxWidth: 720 }}>
-      <div style={{ marginBottom: 8 }}>
-        <Link href={`/city/${citySlug}/brand/${brandSlug}/model/${modelId}?`}>
+    <main className="container">
+      <Stepper activeIndex={4} />
+
+      <div className="btnRow" style={{ marginTop: 6 }}>
+        <Link href={`/city/${citySlug}/brand/${brandSlug}/model/${modelId}`} className="btn">
           ← Voltar
         </Link>
       </div>
 
-      <h1>Escolha a Assistência</h1>
-      <p style={{ opacity: 0.8 }}>
-        Serviços selecionados: {selected.join(", ")}
-      </p>
+      <h1 className="h2">Escolha a Assistência</h1>
+      <p className="sub">Selecione onde deseja realizar o serviço</p>
 
-      {stores.length === 0 ? (
-        <p>Nenhuma assistência encontrada para esses serviços (todas juntas) nesse modelo.</p>
-      ) : (
-        <div style={{ display: "grid", gap: 12, marginTop: 16 }}>
-          {stores.map((s) => (
-            <div
-              key={s.id}
-              style={{
-                border: "1px solid #ddd",
-                borderRadius: 12,
-                padding: 16,
-              }}
-            >
-              <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                <div>
-                  <div style={{ fontWeight: 800 }}>{s.name}</div>
-                  <div style={{ fontSize: 12, opacity: 0.8 }}>{s.address}</div>
+      {/* Stores */}
+      <div style={{ marginTop: 16 }}>
+        <div style={{ fontWeight: 800, marginBottom: 10 }}>Assistências disponíveis</div>
+
+        {stores.length === 0 ? (
+          <div className="surface" style={{ padding: 16 }}>
+            <p style={{ margin: 0 }}>
+              Nenhuma assistência encontrada que ofereça todos esses serviços para esse modelo.
+            </p>
+          </div>
+        ) : (
+          <div className="grid">
+            {stores.map((s) => (
+              <div key={s.id} className="surface" style={{ padding: 16 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "flex-start" }}>
+                  <div>
+                    <div style={{ fontWeight: 900 }}>{s.name}</div>
+                    <div className="cardMeta">{s.address}</div>
+                  </div>
+                  <div style={{ fontWeight: 900, fontSize: 18 }}>{formatBRLFromCents(s.totalCents)}</div>
                 </div>
-                <div style={{ fontWeight: 900, fontSize: 18 }}>
-                  {formatBRLFromCents(s.totalCents)}
+
+                <div style={{ marginTop: 12 }}>
+                  {/* Placeholder action (no JS handler in Server Component) */}
+                  <Link href="#" className="btn btnPrimary" style={{ display: "inline-flex" }}>
+                    Selecionar
+                  </Link>
                 </div>
               </div>
-
-              <div style={{ marginTop: 10 }}>
-                <Link
-                  href="#"
-                  style={{
-                    display: "inline-block",
-                    padding: "10px 12px",
-                    borderRadius: 10,
-                    border: "1px solid #111",
-                    background: "#111",
-                    color: "white",
-                    textDecoration: "none",
-                  }}
-                >
-                  Selecionar
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
+            ))}
+          </div>
+        )}
+      </div>
     </main>
   );
 }
