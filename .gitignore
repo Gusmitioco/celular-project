@@ -1,0 +1,75 @@
+# =========================
+# Sistema / IDE
+# =========================
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# =========================
+# Logs
+# =========================
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# =========================
+# Variáveis de ambiente (NUNCA subir)
+# =========================
+.env
+.env.*
+!.env.example
+!.env.local.example
+
+# =========================
+# Node
+# =========================
+node_modules/
+
+# =========================
+# Next.js
+# =========================
+.next/
+out/
+.vercel/
+
+# =========================
+# Builds (geral)
+# =========================
+dist/
+build/
+coverage/
+*.tsbuildinfo
+
+# =========================
+# Cache
+# =========================
+.cache/
+.tmp/
+temp/
+
+# =========================
+# Docker / Banco (volumes locais)
+# =========================
+pgdata/
+postgres-data/
+docker-data/
+**/pgdata/
+**/postgres-data/
+
+# =========================
+# Prisma (se existir)
+# =========================
+prisma/.env
+prisma/*.db
+prisma/*.db-journal
+
+# =========================
+# Arquivos compactados e dumps
+# =========================
+*.zip
+*.tar
+*.tar.gz
+*.dump
