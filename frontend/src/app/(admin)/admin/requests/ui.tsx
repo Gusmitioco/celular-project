@@ -181,8 +181,9 @@ export function AdminRequestsClient() {
                 style={
                   isCancelled
                     ? {
-                        border: "1px solid var(--border)",
-                        background: "#fff7ed",
+                        // Avoid light backgrounds in dark theme while still highlighting cancelled requests.
+                        border: "1px solid var(--border2)",
+                        background: "rgba(251, 146, 60, 0.12)",
                       }
                     : undefined
                 }

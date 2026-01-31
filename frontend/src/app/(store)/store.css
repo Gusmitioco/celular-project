@@ -1,21 +1,41 @@
-:root {
-  --bg: #f6f7fb;
-  --card: #ffffff;
-  --text: #0f172a;
-  --muted: #5b6475;
-  --border: #e6e8ef;
-  --primary: #111827;
-  --primaryText: #ffffff;
-  --radius: 14px;
-  --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
-}
+/* Store area theme — aligned with public (Dracula / purple) UI.
+   Scoped to .storeShell so it never leaks into the public site. */
 
-/* Store area base */
 .storeShell {
+  --bg0: #120f1f;
+  --bg1: #1a1430;
+
+  --card: rgba(0, 0, 0, 0.20);
+  --card2: rgba(0, 0, 0, 0.28);
+
+  --text: rgba(248, 248, 242, 0.95);
+  --muted: rgba(248, 248, 242, 0.72);
+  --muted2: rgba(248, 248, 242, 0.55);
+
+  /* IMPORTANT: some store UI uses inline var(--border) */
+  --border: rgba(255, 255, 255, 0.12);
+  --border2: rgba(255, 255, 255, 0.18);
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+
+  --radius: 18px;
+
+  --primary: rgba(255, 255, 255, 0.90);
+  --primaryText: #1a1430;
+
   min-height: 100vh;
-  background: var(--bg);
   color: var(--text);
   padding: 22px 14px;
+  background:
+    radial-gradient(1200px 700px at 18% 10%, rgba(168, 85, 247, 0.35) 0%, rgba(168, 85, 247, 0.05) 52%, rgba(0, 0, 0, 0) 70%),
+    radial-gradient(900px 600px at 82% 0%, rgba(236, 72, 153, 0.28) 0%, rgba(236, 72, 153, 0.04) 55%, rgba(0, 0, 0, 0) 74%),
+    radial-gradient(700px 520px at 70% 92%, rgba(139, 92, 246, 0.25) 0%, rgba(139, 92, 246, 0.03) 58%, rgba(0, 0, 0, 0) 75%),
+    linear-gradient(180deg, var(--bg0), var(--bg1));
+}
+
+.storeShell *,
+.storeShell *::before,
+.storeShell *::after {
+  box-sizing: border-box;
 }
 
 .storeContainer {
@@ -24,9 +44,10 @@
 }
 
 .h2 {
-  font-size: 26px;
+  font-size: 28px;
   margin: 12px 0 4px;
   font-weight: 900;
+  letter-spacing: -0.02em;
 }
 
 .sub {
@@ -39,6 +60,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
 }
 
 .grid {
@@ -65,28 +87,38 @@
 }
 
 .btn {
-  border: 1px solid var(--border);
-  background: #fff;
+  border: 1px solid var(--border2);
+  background: rgba(255, 255, 255, 0.14);
   color: var(--text);
   padding: 10px 12px;
   border-radius: 12px;
   font-weight: 800;
   text-decoration: none;
   cursor: pointer;
+  transition: filter 120ms ease, transform 120ms ease, background 120ms ease;
 }
 
 .btn:hover {
-  filter: brightness(0.98);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.btn:active {
+  transform: translateY(1px);
 }
 
 .btnPrimary {
   background: var(--primary);
   color: var(--primaryText);
-  border-color: transparent;
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.btnPrimary:hover {
+  filter: brightness(0.98);
 }
 
 .btnDisabled,
-.btn[aria-disabled="true"] {
+.btn[aria-disabled="true"],
+.btn:disabled {
   opacity: 0.55;
   pointer-events: none;
 }
@@ -95,13 +127,48 @@
   width: 100%;
   padding: 12px;
   border-radius: 12px;
-  border: 1px solid var(--border);
-  background: #fff;
+  border: 1px solid var(--border2);
+  background: rgba(0, 0, 0, 0.22);
+  color: var(--text);
   outline: none;
 }
 
+.input::placeholder {
+  color: rgba(248, 248, 242, 0.55);
+}
+
 .input:focus {
-  border-color: #cbd5e1;
+  border-color: rgba(255, 255, 255, 0.30);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.18);
+}
+
+/* Native form controls (some pages use inline styles without .input)
+   Use !important so we can override inline background/foreground defaults. */
+.storeShell select,
+.storeShell input:not(.input),
+.storeShell textarea:not(.input) {
+  background: rgba(0, 0, 0, 0.22) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border2) !important;
+  outline: none;
+}
+
+.storeShell select {
+  padding: 12px !important;
+  border-radius: 12px !important;
+}
+
+.storeShell select:focus,
+.storeShell input:focus,
+.storeShell textarea:focus {
+  border-color: rgba(255, 255, 255, 0.30) !important;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.18);
+}
+
+/* Options dropdown colors (best-effort; browser may still limit styling) */
+.storeShell select option {
+  background: #120f1f;
+  color: rgba(248, 248, 242, 0.95);
 }
 
 .cardTitle {
@@ -112,4 +179,21 @@
   color: var(--muted);
   font-size: 13px;
   margin-top: 2px;
+}
+
+/* Small helpers used across store UI */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border);
+}
+
+.mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }

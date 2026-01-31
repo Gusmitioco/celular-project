@@ -575,7 +575,8 @@ export function StoreInboxClient() {
                         width: "100%",
                         textAlign: "left",
                         border: "none",
-                        background: active ? "var(--card)" : hasUnread ? "#fff7ed" : "transparent",
+                        // Avoid light backgrounds that would clash with the dark theme (text becomes unreadable).
+                        background: active ? "var(--card)" : hasUnread ? "rgba(255, 255, 255, 0.08)" : "transparent",
                         borderBottom: "1px solid var(--border)",
                         padding: 12,
                         cursor: "pointer",
@@ -676,7 +677,8 @@ export function StoreInboxClient() {
                               padding: "10px 12px",
                               borderRadius: 12,
                               border: "1px solid var(--border)",
-                              background: mine ? "var(--card)" : "#f3f4f6",
+                              // Keep both sides readable in the dark theme.
+                              background: mine ? "var(--card)" : "rgba(255, 255, 255, 0.10)",
                             }}
                           >
                             <div style={{ fontWeight: 800, fontSize: 12, marginBottom: 4 }}>

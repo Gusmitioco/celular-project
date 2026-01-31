@@ -537,7 +537,8 @@ export function StoreRequestDetailsClient() {
                 padding: 12,
                 height: 260,
                 overflow: "auto",
-                background: "#fff",
+                // Keep readable on dark theme (avoid white panel with light text)
+                background: "rgba(0, 0, 0, 0.18)",
               }}
             >
               {chatLoading && messages.length === 0 ? (
@@ -556,7 +557,8 @@ export function StoreRequestDetailsClient() {
                             padding: "10px 12px",
                             borderRadius: 12,
                             border: "1px solid var(--border)",
-                            background: mine ? "var(--card)" : "#f3f4f6",
+                            // Keep both sides readable on the dark theme.
+                            background: mine ? "var(--card)" : "rgba(255, 255, 255, 0.10)",
                           }}
                         >
                           <div style={{ fontWeight: 800, fontSize: 12, marginBottom: 4 }}>
