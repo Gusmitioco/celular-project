@@ -1,7 +1,7 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { pool, query } from "../db";
-import { optionalCustomer, requireCustomer } from "../auth/customerAuth";
+import { requireCustomer } from "../auth/customerAuth";
 import { chatLimiter, createRequestLimiter, heavyReadLimiter } from "../middleware/antiSpam";
 import { emitMessage, type RealtimeMessage } from "../realtime/io";
 import { slugify } from "../utils/slugify.ts";
@@ -232,13 +232,13 @@ requestsRouter.post("/", requireCustomer, createRequestLimiter, async (req, res)
 
 /**
  * POST /requests/public
- * Guest-friendly checkout endpoint.
+ * Checkout endpoint (requires customer login).
  *
  * body: { citySlug? , storeId? , modelId , serviceIds: number[] }
- * auth: optional customer session (if present, the request is linked to the customer)
+ * auth: customer session (required)
  */
-requestsRouter.post("/public", optionalCustomer, createRequestLimiter, async (req, res) => {
-  const customer = (req as any).customer as { id: number } | undefined;
+requestsRouter.post("/public", requireCustomer, createRequestLimiter, async (req, res) => {
+  const customer = (req as any).customer as { id: number };
 
   const citySlug = String(req.body?.citySlug ?? req.query?.citySlug ?? "").trim();
   const storeIdRaw = Number(req.body?.storeId);

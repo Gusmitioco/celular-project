@@ -14,7 +14,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 
 export function CheckoutStep() {
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { brand, model, services, totalCents, reset } = useAgendamento();
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -34,14 +34,20 @@ export function CheckoutStep() {
 
   async function confirm() {
     setError(null);
+
+    // Old behavior: only generate a request/code after the customer is logged in.
+    // If auth state is still loading, avoid redirecting prematurely.
+    if (authLoading) return;
+
+    // If not logged in, redirect to login and come back to checkout.
+    if (!user) {
+      router.push(`/login?returnTo=${encodeURIComponent(rotas.agendamento.checkout())}`);
+      return;
+    }
+
     setLoading(true);
     try {
       const order = await api.createOrder({
-        // Por enquanto, mantemos o fluxo funcionando sem dados do cliente.
-        // (O backend exige esses campos, então enviamos placeholders.)
-        customerName: "Cliente",
-        customerWhatsapp: "Não informado",
-        brandId: brand.id,
         modelId: model.id,
         serviceIds: services.map((s) => s.id),
       });
@@ -137,9 +143,9 @@ export function CheckoutStep() {
           <BackButton onClick={() => router.push(rotas.agendamento.servicos())} />
 
           <ConfirmButton
-            disabled={loading}
+            disabled={loading || authLoading}
             onClick={confirm}
-            label={loading ? "Confirmando..." : "Confirmar pedido"}
+            label={loading ? "Confirmando..." : authLoading ? "Carregando..." : "Confirmar pedido"}
           />
         </div>
       </Card>
