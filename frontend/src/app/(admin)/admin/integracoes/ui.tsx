@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { apiBaseUrl } from "@/services/api";
 
 type StoreRow = {
   id: number;
@@ -19,7 +20,7 @@ type Integration = {
 };
 
 export function AdminIntegracoesClient() {
-  const api = process.env.NEXT_PUBLIC_API_URL;
+  const api = apiBaseUrl;
 
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -39,7 +40,7 @@ export function AdminIntegracoesClient() {
     setLoading(true);
     setMsg(null);
 
-    const res = await fetch(`${api}/admin/stores`, { credentials: "include" });
+    const res = await fetch(`${api}/api/admin/stores`, { credentials: "include" });
     const data = await res.json().catch(() => null);
 
     if (!res.ok || !data?.ok) {
@@ -57,7 +58,7 @@ export function AdminIntegracoesClient() {
       if (!selectedId) return;
       setMsg(null);
 
-      const res = await fetch(`${api}/admin/stores/${selectedId}/integration/test`, {
+      const res = await fetch(`${api}/api/admin/stores/${selectedId}/integration/test`, {
         method: "POST",
         credentials: "include",
       });
@@ -75,7 +76,7 @@ export function AdminIntegracoesClient() {
   async function loadIntegration(storeId: number) {
     setMsg(null);
 
-    const res = await fetch(`${api}/admin/stores/${storeId}/integration`, { credentials: "include" });
+    const res = await fetch(`${api}/api/admin/stores/${storeId}/integration`, { credentials: "include" });
     const data = await res.json().catch(() => null);
 
     if (!res.ok || !data?.ok) {
@@ -94,7 +95,7 @@ export function AdminIntegracoesClient() {
 
     setMsg(null);
 
-    const res = await fetch(`${api}/admin/stores/${selectedId}/integration`, {
+    const res = await fetch(`${api}/api/admin/stores/${selectedId}/integration`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

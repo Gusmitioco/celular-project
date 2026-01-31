@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { apiBaseUrl } from "@/services/api";
 
 export default function AdminLoginPage() {
   const router = useRouter();
@@ -16,7 +17,9 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/login`, {
+      // Backend routes are mounted under /api.
+      // apiBaseUrl normalizes NEXT_PUBLIC_API_URL to avoid double "/api/api".
+      const res = await fetch(`${apiBaseUrl}/api/admin/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

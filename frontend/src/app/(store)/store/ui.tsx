@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { formatBRLFromCents } from "../../../lib/format";
 import { statusLabel } from "../../../lib/statusLabel";
+import { apiBaseUrl } from "@/services/api";
 
 type Row = {
   id: number;
@@ -23,7 +24,7 @@ type Resp = {
 };
 
 export function StoreDashboardClient() {
-  const api = process.env.NEXT_PUBLIC_API_URL;
+  const api = apiBaseUrl;
 
   // Store dashboard shows in_progress + done + cancelled
   const [status, setStatus] = useState<"in_progress" | "done" | "cancelled">("in_progress");
@@ -60,7 +61,7 @@ export function StoreDashboardClient() {
     setLoggingOut(true);
     setMsg(null);
 
-    await fetch(`${api}/store-auth/logout`, {
+    await fetch(`${api}/api/store-auth/logout`, {
       method: "POST",
       credentials: "include",
     }).catch(() => null);
@@ -73,7 +74,7 @@ export function StoreDashboardClient() {
     setMsg(null);
 
     try {
-      const res = await fetch(`${api}/store/requests?${qs}`, {
+      const res = await fetch(`${api}/api/store/requests?${qs}`, {
         credentials: "include",
         cache: "no-store",
       });
@@ -117,7 +118,7 @@ export function StoreDashboardClient() {
     setAcceptMsg(null);
 
     try {
-      const res = await fetch(`${api}/store/requests/accept`, {
+      const res = await fetch(`${api}/api/store/requests/accept`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",

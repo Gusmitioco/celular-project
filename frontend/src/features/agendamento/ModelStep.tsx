@@ -27,7 +27,9 @@ export function ModelStep() {
     }
 
     api
-      .listModels(brand.id)
+      // Backend expects brandSlug (string), not the numeric brand ID.
+      // Our Brand object always includes a slug; fall back to id only for legacy stored state.
+      .listModels(brand.slug || brand.id)
       .then(setModels)
       .catch((e: any) => setError(e?.message || "Erro ao carregar modelos"));
   }, [brand, router]);

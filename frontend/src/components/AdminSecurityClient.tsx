@@ -1,11 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { apiBaseUrl } from "@/services/api";
 
 type StoreRow = { id: number; name: string; city: string; address: string };
 
 export function AdminSecurityClient() {
-  const api = process.env.NEXT_PUBLIC_API_URL;
+  const api = apiBaseUrl;
 
   const [confirmText, setConfirmText] = useState("");
   const [loadingAll, setLoadingAll] = useState(false);
@@ -25,7 +26,7 @@ export function AdminSecurityClient() {
   async function loadStores() {
     setStoresLoading(true);
     try {
-      const res = await fetch(`${api}/admin/stores`, {
+      const res = await fetch(`${api}/api/admin/stores`, {
         credentials: "include",
         cache: "no-store",
       });
@@ -75,7 +76,7 @@ export function AdminSecurityClient() {
 
     setLoadingAll(true);
     try {
-      const res = await fetch(`${api}/admin/security/logout-all-stores`, {
+      const res = await fetch(`${api}/api/admin/security/logout-all-stores`, {
         method: "POST",
         credentials: "include",
       });
@@ -111,7 +112,7 @@ export function AdminSecurityClient() {
 
     setLoadingOne(true);
     try {
-      const res = await fetch(`${api}/admin/security/logout-store/${selectedStoreId}`, {
+      const res = await fetch(`${api}/api/admin/security/logout-store/${selectedStoreId}`, {
         method: "POST",
         credentials: "include",
       });

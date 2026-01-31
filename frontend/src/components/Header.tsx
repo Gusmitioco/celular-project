@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
+import { apiBaseUrl } from "@/services/api";
 
 type CityItem = { city: string; slug: string };
 
@@ -26,7 +27,7 @@ export function Header() {
 
   useEffect(() => {
     // fetch once; cheap + keeps accents (São Paulo, etc.)
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/cities`, { cache: "no-store" })
+    fetch(`${apiBaseUrl}/api/cities`, { cache: "no-store" })
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => setCities(Array.isArray(data) ? data : []))
       .catch(() => setCities([]));

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { formatBRLFromCents } from "../../../../lib/format";
+import { apiBaseUrl } from "@/services/api";
 
 type Store = { id: number; name: string; city: string };
 
@@ -44,7 +45,7 @@ function statusLabel(s: Row["status"]) {
 }
 
 export function AdminRequestsClient() {
-  const api = process.env.NEXT_PUBLIC_API_URL;
+  const api = apiBaseUrl;
 
   const [stores, setStores] = useState<Store[]>([]);
   const [rows, setRows] = useState<Row[]>([]);
@@ -72,7 +73,7 @@ export function AdminRequestsClient() {
 
   async function loadStores() {
     if (!api) return;
-    const res = await fetch(`${api}/admin/stores`, { credentials: "include" });
+    const res = await fetch(`${api}/api/admin/stores`, { credentials: "include" });
     const data = await res.json().catch(() => null);
     if (!res.ok || !data?.ok) return;
     setStores((data.stores ?? []).map((s: any) => ({ id: s.id, name: s.name, city: s.city })));
@@ -84,7 +85,7 @@ export function AdminRequestsClient() {
     setLoading(true);
     setMsg(null);
 
-    const res = await fetch(`${api}/admin/requests?${queryStr}`, { credentials: "include" });
+    const res = await fetch(`${api}/api/admin/requests?${queryStr}`, { credentials: "include" });
     const data = (await res.json().catch(() => null)) as ListResp | null;
 
     if (res.status === 401) {

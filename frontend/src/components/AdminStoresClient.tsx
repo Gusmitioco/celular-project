@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { apiBaseUrl } from "@/services/api";
 
 type Store = {
   id: number;
@@ -17,7 +18,7 @@ type StoreUser = {
 };
 
 export function AdminStoresClient() {
-  const api = process.env.NEXT_PUBLIC_API_URL;
+  const api = apiBaseUrl;
 
   const [stores, setStores] = useState<Store[]>([]);
   const [loading, setLoading] = useState(true);
@@ -49,7 +50,7 @@ export function AdminStoresClient() {
     setLoading(true);
     setMsg(null);
 
-    const res = await fetch(`${api}/admin/stores`, {
+    const res = await fetch(`${api}/api/admin/stores`, {
       credentials: "include",
       cache: "no-store",
     });
@@ -71,7 +72,7 @@ export function AdminStoresClient() {
     setUsersLoading(true);
     setUsersMsg(null);
 
-    const res = await fetch(`${api}/admin/stores/${storeId}/store-users`, {
+    const res = await fetch(`${api}/api/admin/stores/${storeId}/store-users`, {
       credentials: "include",
       cache: "no-store",
     });
@@ -124,7 +125,7 @@ export function AdminStoresClient() {
       return;
     }
 
-    const res = await fetch(`${api}/admin/stores`, {
+    const res = await fetch(`${api}/api/admin/stores`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -158,7 +159,7 @@ export function AdminStoresClient() {
       return;
     }
 
-    const res = await fetch(`${api}/admin/stores/${editingId}`, {
+    const res = await fetch(`${api}/api/admin/stores/${editingId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -186,7 +187,7 @@ export function AdminStoresClient() {
 
     setMsg(null);
 
-    const res = await fetch(`${api}/admin/stores/${id}`, {
+    const res = await fetch(`${api}/api/admin/stores/${id}`, {
       method: "DELETE",
       credentials: "include",
     });
@@ -218,7 +219,7 @@ export function AdminStoresClient() {
       return;
     }
 
-    const res = await fetch(`${api}/admin/stores/${editingStore.id}/store-user`, {
+    const res = await fetch(`${api}/api/admin/stores/${editingStore.id}/store-user`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -241,7 +242,7 @@ export function AdminStoresClient() {
     if (!editingStore) return;
     setUsersMsg(null);
 
-    const res = await fetch(`${api}/admin/stores/${editingStore.id}/store-users/${userId}`, {
+    const res = await fetch(`${api}/api/admin/stores/${editingStore.id}/store-users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -270,7 +271,7 @@ export function AdminStoresClient() {
 
     setUsersMsg(null);
 
-    const res = await fetch(`${api}/admin/stores/${editingStore.id}/store-users/${userId}`, {
+    const res = await fetch(`${api}/api/admin/stores/${editingStore.id}/store-users/${userId}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

@@ -1,8 +1,10 @@
 "use client";
 
+import { apiBaseUrl } from "@/services/api";
+
 export function StoreLogoutButton() {
   async function logout() {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/store-auth/logout`, {
+    await fetch(`${apiBaseUrl}/api/store-auth/logout`, {
       method: "POST",
       credentials: "include",
     }).catch(() => null);

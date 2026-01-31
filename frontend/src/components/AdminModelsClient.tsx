@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { apiBaseUrl } from "@/services/api";
 
 type Brand = { id: number; name: string };
 type ModelRow = { id: number; name: string; brand_id: number; brand_name: string };
@@ -26,7 +27,7 @@ export function AdminModelsClient() {
     setLoading(true);
     setMsg(null);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/models`, {
+    const res = await fetch(`${apiBaseUrl}/api/admin/models`, {
       credentials: "include",
       cache: "no-store",
     });
@@ -72,7 +73,7 @@ export function AdminModelsClient() {
     const name = newName.trim();
     if (!name) return setMsg("Digite o nome do modelo.");
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/models`, {
+    const res = await fetch(`${apiBaseUrl}/api/admin/models`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -95,7 +96,7 @@ export function AdminModelsClient() {
     const name = editName.trim();
     if (!name) return setMsg("Digite o nome do modelo.");
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/models/${editingId}`, {
+    const res = await fetch(`${apiBaseUrl}/api/admin/models/${editingId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -115,7 +116,7 @@ export function AdminModelsClient() {
     if (!ok) return;
 
     setMsg(null);
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/models/${id}`, {
+    const res = await fetch(`${apiBaseUrl}/api/admin/models/${id}`, {
       method: "DELETE",
       credentials: "include",
     });

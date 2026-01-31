@@ -1,13 +1,16 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL;
+import { apiBaseUrl } from "@/services/api";
 
-if (!API_URL) {
-  throw new Error("Missing NEXT_PUBLIC_API_URL (check frontend/.env.local)");
+// Helper used by a few legacy components.
+// Builds URLs against the backend router mounted under /api.
+function withApiPrefix(path: string) {
+  const p = path.startsWith("/") ? path : `/${path}`;
+  return p.startsWith("/api/") || p === "/api" ? p : `/api${p}`;
 }
 
 export async function apiGet<T>(path: string): Promise<T> {
-  const url = `${API_URL}${path}`;
+  const url = `${apiBaseUrl}${withApiPrefix(path)}`;
   try {
-    const res = await fetch(url, { cache: "no-store" });
+    const res = await fetch(url, { cache: "no-store", credentials: "include" });
 
     if (!res.ok) {
       const text = await res.text().catch(() => "");

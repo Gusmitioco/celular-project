@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { StoreDashboardClient } from "./ui";
+import { apiBaseUrl } from "@/services/api";
 
 export default async function StoreHomePage() {
   const cookieStore = await cookies();
@@ -10,7 +11,7 @@ export default async function StoreHomePage() {
     .map((c) => `${c.name}=${c.value}`)
     .join("; ");
 
-  const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/store-auth/me`, {
+  const res = await fetch(`${apiBaseUrl}/api/store-auth/me`, {
     headers: cookieHeader ? { Cookie: cookieHeader } : {},
     cache: "no-store",
   }).catch(() => null);

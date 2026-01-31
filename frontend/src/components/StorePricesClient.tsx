@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { formatBRLFromCents } from "@/lib/format";
+import { apiBaseUrl } from "@/services/api";
 
 type Meta = {
   ok: true;
@@ -45,7 +46,7 @@ export function StorePricesClient() {
   const [msg, setMsg] = useState<string | null>(null);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/store/prices/meta`, {
+    fetch(`${apiBaseUrl}/api/store/prices/meta`, {
       credentials: "include",
       cache: "no-store",
     })
@@ -92,7 +93,7 @@ export function StorePricesClient() {
     setLoadingRows(true);
     setMsg(null);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/store/prices?modelId=${modelId}`, {
+    const res = await fetch(`${apiBaseUrl}/api/store/prices?modelId=${modelId}`, {
       credentials: "include",
       cache: "no-store",
     });
@@ -147,7 +148,7 @@ export function StorePricesClient() {
       items.push({ serviceId, priceCents: cents, currency: "BRL" });
     }
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/store/prices/bulk`, {
+    const res = await fetch(`${apiBaseUrl}/api/store/prices/bulk`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

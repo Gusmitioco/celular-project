@@ -14,10 +14,12 @@ function normalizeBaseUrl(input: string) {
   return noTrail.replace(/\/?api$/i, "");
 }
 
-const baseUrl = normalizeBaseUrl(rawBaseUrl);
+// Exported so other modules (e.g. admin/store login screens) can reliably build URLs
+// regardless of whether NEXT_PUBLIC_API_URL includes a trailing "/api".
+export const apiBaseUrl = normalizeBaseUrl(rawBaseUrl);
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(`${baseUrl}${path}`, {
+  const res = await fetch(`${apiBaseUrl}${path}`, {
     ...init,
     credentials: "include",
     headers: {
@@ -73,6 +75,14 @@ function slugifyLocal(input: string) {
 }
 
 export const api = {
+  // Public list for customer flow.
+  // Use this when you need a stable, backend-provided slug (brandSlug).
+  listPublicBrands: async () => {
+    const q = `?citySlug=${encodeURIComponent(DEFAULT_CITY_SLUG)}`;
+    const raw = await http<Array<{ brand: string; slug: string }>>(`/api/brands${q}`);
+    return raw.map((b) => ({ id: b.slug, name: b.brand, slug: b.slug }));
+  },
+
   // ===== Public app flow (single-city MVP) =====
   // Backend routes:
   //   GET  /api/brands
@@ -90,10 +100,7 @@ export const api = {
       );
       return meta.brands.map((b) => ({ id: String(b.id), name: b.name, slug: slugifyLocal(b.name) }));
     } catch {
-      // backend expects citySlug (or DEFAULT_CITY_NAME set on the server). We always send it.
-      const q = `?citySlug=${encodeURIComponent(DEFAULT_CITY_SLUG)}`;
-      const raw = await http<Array<{ brand: string; slug: string }>>(`/api/brands${q}`);
-      return raw.map((b) => ({ id: b.slug, name: b.brand, slug: b.slug }));
+      return await api.listPublicBrands();
     }
   },
 

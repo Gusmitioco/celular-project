@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { apiBaseUrl } from "@/services/api";
 
 type MeResponse =
   | { ok: true; user: { role: "owner"; username: string } }
@@ -10,7 +11,7 @@ export function AdminMe() {
   const [me, setMe] = useState<MeResponse | null>(null);
 
   useEffect(() => {
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/me`, {
+    fetch(`${apiBaseUrl}/api/admin/me`, {
       credentials: "include",
       cache: "no-store",
     })

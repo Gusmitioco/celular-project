@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { apiBaseUrl } from "@/services/api";
 
 export function StoreLoginClient() {
-  const api = process.env.NEXT_PUBLIC_API_URL;
+  const api = apiBaseUrl;
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -14,7 +15,7 @@ export function StoreLoginClient() {
     setLoading(true);
     setMsg(null);
 
-    const res = await fetch(`${api}/store-auth/login`, {
+    const res = await fetch(`${api}/api/store-auth/login`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

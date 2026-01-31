@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { apiBaseUrl } from "@/services/api";
 
 type Store = { id: number; name: string; city: string };
 type Brand = { id: number; name: string };
@@ -36,7 +37,7 @@ export function AdminStoreModelsClient() {
   // Load meta (stores/brands/models)
   useEffect(() => {
     setLoadingMeta(true);
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/store-models/meta`, {
+    fetch(`${apiBaseUrl}/api/admin/store-models/meta`, {
       credentials: "include",
       cache: "no-store",
     })
@@ -57,7 +58,7 @@ export function AdminStoreModelsClient() {
     setLoadingSelection(true);
     setMsg(null);
 
-    fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/store-models?storeId=${storeId}`, {
+    fetch(`${apiBaseUrl}/api/admin/store-models?storeId=${storeId}`, {
       credentials: "include",
       cache: "no-store",
     })
@@ -107,7 +108,7 @@ export function AdminStoreModelsClient() {
     setSaving(true);
     setMsg(null);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/store-models/set`, {
+    const res = await fetch(`${apiBaseUrl}/api/admin/store-models/set`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

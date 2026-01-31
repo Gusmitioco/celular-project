@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useParams } from "next/navigation";
 import { formatBRLFromCents } from "../../../../../lib/format";
+import { apiBaseUrl } from "@/services/api";
 
 type SyncRow = {
   id: number;
@@ -99,7 +100,7 @@ function senderLabel(m: MessageRow) {
 }
 
 export function AdminRequestDetailsClient() {
-  const api = process.env.NEXT_PUBLIC_API_URL;
+  const api = apiBaseUrl;
 
   const params = useParams() as Record<string, string | string[] | undefined>;
   const idParam = params?.id;
@@ -118,7 +119,7 @@ export function AdminRequestDetailsClient() {
     setLoading(true);
     setMsg(null);
 
-    const res = await fetch(`${api}/admin/requests/${encodeURIComponent(id)}`, {
+    const res = await fetch(`${api}/api/admin/requests/${encodeURIComponent(id)}`, {
       credentials: "include",
       cache: "no-store",
     });
@@ -145,7 +146,7 @@ export function AdminRequestDetailsClient() {
     setSyncing(true);
     setMsg(null);
 
-    const res = await fetch(`${api}/admin/requests/${encodeURIComponent(id)}/sync`, {
+    const res = await fetch(`${api}/api/admin/requests/${encodeURIComponent(id)}/sync`, {
       method: "POST",
       credentials: "include",
     });
@@ -178,7 +179,7 @@ export function AdminRequestDetailsClient() {
     setSavingStatus(true);
     setMsg(null);
 
-    const res = await fetch(`${api}/admin/requests/${encodeURIComponent(id)}/status`, {
+    const res = await fetch(`${api}/api/admin/requests/${encodeURIComponent(id)}/status`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -223,7 +224,7 @@ export function AdminRequestDetailsClient() {
     setSavingChatBlock(true);
     setMsg(null);
 
-    const res = await fetch(`${api}/admin/requests/${encodeURIComponent(id)}/customer-messages`, {
+    const res = await fetch(`${api}/api/admin/requests/${encodeURIComponent(id)}/customer-messages`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

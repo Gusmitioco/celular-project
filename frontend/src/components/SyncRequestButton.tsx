@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { apiBaseUrl } from "@/services/api";
 
 export function SyncRequestButton({ code }: { code: string }) {
   const [loading, setLoading] = useState(false);
@@ -10,7 +11,7 @@ export function SyncRequestButton({ code }: { code: string }) {
     setLoading(true);
     setMsg(null);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/requests/me/${encodeURIComponent(code)}/sync`, {
+    const res = await fetch(`${apiBaseUrl}/api/requests/me/${encodeURIComponent(code)}/sync`, {
       method: "POST",
       credentials: "include",
     });

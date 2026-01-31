@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { apiBaseUrl } from "@/services/api";
 
 type AcceptResp =
   | { ok: true; id: number }
@@ -18,7 +19,7 @@ type LookupResp =
  * - Then we redirect to the request details.
  */
 export function StoreRequestsClient() {
-  const api = process.env.NEXT_PUBLIC_API_URL;
+  const api = apiBaseUrl;
 
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
@@ -39,7 +40,7 @@ export function StoreRequestsClient() {
     setMsg(null);
 
     try {
-      const res = await fetch(`${api}/store/requests/accept`, {
+      const res = await fetch(`${api}/api/store/requests/accept`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -87,7 +88,7 @@ export function StoreRequestsClient() {
     setMsg(null);
 
     try {
-      const res = await fetch(`${api}/store/requests/lookup?code=${encodeURIComponent(c)}`, {
+      const res = await fetch(`${api}/api/store/requests/lookup?code=${encodeURIComponent(c)}`, {
         credentials: "include",
         cache: "no-store",
       });

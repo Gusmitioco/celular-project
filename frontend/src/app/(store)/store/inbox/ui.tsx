@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { getSocket } from "@/lib/socket";
 import type { Socket } from "socket.io-client";
+import { apiBaseUrl } from "@/services/api";
 
 type ThreadRow = {
   id: number;
@@ -42,7 +43,7 @@ function statusLabel(s: ThreadRow["status"]) {
 }
 
 export function StoreInboxClient() {
-  const api = process.env.NEXT_PUBLIC_API_URL;
+  const api = apiBaseUrl;
 
   const [socket, setSocket] = useState<Socket | null>(null);
   const [rtStatus, setRtStatus] = useState<"connecting" | "online" | "offline">("offline");
@@ -159,7 +160,7 @@ export function StoreInboxClient() {
     setErr(null);
 
     try {
-      const res = await fetch(`${api}/store/inbox?${queryKey}&limit=${PAGE_LIMIT}&offset=${nextOffset}`, {
+      const res = await fetch(`${api}/api/store/inbox?${queryKey}&limit=${PAGE_LIMIT}&offset=${nextOffset}`, {
         credentials: "include",
         cache: "no-store",
         signal,
@@ -224,7 +225,7 @@ export function StoreInboxClient() {
   async function markAsRead(requestId: number, lastReadMessageId: number) {
     if (!api) return;
 
-    await fetch(`${api}/store/inbox/${requestId}/read`, {
+    await fetch(`${api}/api/store/inbox/${requestId}/read`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -242,7 +243,7 @@ export function StoreInboxClient() {
     setChatErr(null);
 
     try {
-      const res = await fetch(`${api}/store/requests/${requestId}/messages`, {
+      const res = await fetch(`${api}/api/store/requests/${requestId}/messages`, {
         credentials: "include",
         cache: "no-store",
         signal,
@@ -300,7 +301,7 @@ export function StoreInboxClient() {
       return;
     }
 
-    const res = await fetch(`${api}/store/requests/${requestId}/messages`, {
+    const res = await fetch(`${api}/api/store/requests/${requestId}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { formatBRLFromCents } from "../../../../../lib/format";
 import { statusLabel } from "../../../../../lib/statusLabel";
+import { apiBaseUrl } from "@/services/api";
 
 type Item = { service_id: number; service_name: string; price_cents: number };
 
@@ -23,7 +24,7 @@ type Resp = {
 };
 
 export function StoreRequestDetailsClient() {
-  const api = process.env.NEXT_PUBLIC_API_URL;
+  const api = apiBaseUrl;
   const params = useParams<{ code: string }>();
   const code = String(params?.code ?? "");
 
@@ -51,7 +52,7 @@ export function StoreRequestDetailsClient() {
     setMsg(null);
 
     try {
-      const res = await fetch(`${api}/store/requests/lookup?code=${encodeURIComponent(code)}`, {
+      const res = await fetch(`${api}/api/store/requests/lookup?code=${encodeURIComponent(code)}`, {
         credentials: "include",
         cache: "no-store",
       });
@@ -93,7 +94,7 @@ export function StoreRequestDetailsClient() {
     setMsg(null);
 
     try {
-      const res = await fetch(`${api}/store/requests/accept`, {
+      const res = await fetch(`${api}/api/store/requests/accept`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -143,7 +144,7 @@ export function StoreRequestDetailsClient() {
     setMsg(null);
 
     try {
-      const res = await fetch(`${api}/store/requests/${data.header.id}/status`, {
+      const res = await fetch(`${api}/api/store/requests/${data.header.id}/status`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -197,7 +198,7 @@ export function StoreRequestDetailsClient() {
     setMsg(null);
 
     try {
-      const res = await fetch(`${api}/store/requests/${data.header.id}/cancel`, {
+      const res = await fetch(`${api}/api/store/requests/${data.header.id}/cancel`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -231,7 +232,7 @@ export function StoreRequestDetailsClient() {
     setChatLoading(true);
     setChatErr(null);
 
-    const res = await fetch(`${api}/store/requests/${requestId}/messages`, {
+    const res = await fetch(`${api}/api/store/requests/${requestId}/messages`, {
       credentials: "include",
       cache: "no-store",
     });
@@ -259,7 +260,7 @@ export function StoreRequestDetailsClient() {
 
     setChatErr(null);
 
-    const res = await fetch(`${api}/store/requests/${requestId}/messages`, {
+    const res = await fetch(`${api}/api/store/requests/${requestId}/messages`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",

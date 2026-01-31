@@ -6,7 +6,7 @@ import { useParams } from "next/navigation";
 
 import { ClientShell } from "@/components/layout/ClientShell";
 import { Card } from "@/components/ui/Card";
-import { api } from "@/services/api";
+import { api, apiBaseUrl } from "@/services/api";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getSocket } from "@/lib/socket";
 import type { Socket } from "socket.io-client";
@@ -147,10 +147,8 @@ export default function Page() {
       return;
     }
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
-    if (!apiUrl) return;
-
-    const s = getSocket(apiUrl);
+    // For sockets we want the backend origin, not the REST prefix.
+    const s = getSocket(apiBaseUrl);
     setSocket(s);
     setRtStatus("connecting");
 

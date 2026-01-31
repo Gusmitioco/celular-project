@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { apiBaseUrl } from "@/services/api";
 
 type Service = { id: number; name: string };
 
@@ -19,7 +20,7 @@ export function AdminServicesClient() {
     setLoading(true);
     setMsg(null);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/services`, {
+    const res = await fetch(`${apiBaseUrl}/api/admin/services`, {
       credentials: "include",
       cache: "no-store",
     });
@@ -50,7 +51,7 @@ export function AdminServicesClient() {
     const name = newName.trim();
     if (!name) return setMsg("Digite um nome.");
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/services`, {
+    const res = await fetch(`${apiBaseUrl}/api/admin/services`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -72,7 +73,7 @@ export function AdminServicesClient() {
     const name = editName.trim();
     if (!name) return setMsg("Digite um nome.");
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/services/${editingId}`, {
+    const res = await fetch(`${apiBaseUrl}/api/admin/services/${editingId}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -93,7 +94,7 @@ export function AdminServicesClient() {
 
     setMsg(null);
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/admin/services/${id}`, {
+    const res = await fetch(`${apiBaseUrl}/api/admin/services/${id}`, {
       method: "DELETE",
       credentials: "include",
     });
