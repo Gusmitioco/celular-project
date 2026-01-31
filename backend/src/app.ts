@@ -1,6 +1,11 @@
 import express from "express";
 import cors from "cors";
 
+import { loadEnv } from "./lib/env.ts";
+
+// Make sure .env is loaded regardless of where the process is started from.
+loadEnv();
+
 import { apiRouter } from "./routes/index.ts";
 import { errorHandler } from "./middleware/errorHandler.ts";
 

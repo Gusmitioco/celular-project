@@ -1,5 +1,11 @@
 import pg from "pg";
 
+// Ensure .env is loaded even when the backend is started from a different cwd
+// (monorepo setups often keep the .env at the repo root).
+import { loadEnv } from "../lib/env";
+
+loadEnv();
+
 const { Pool, types } = pg;
 
 // Parse BIGINT (int8) as number (safe for your IDs)
