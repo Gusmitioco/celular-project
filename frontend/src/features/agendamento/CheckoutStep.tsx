@@ -8,6 +8,7 @@ import { BackButton } from "@/components/ui/BackButton";
 import { ConfirmButton } from "@/components/ui/ConfirmButton";
 import { rotas } from "@/lib/rotas";
 import { useAgendamento } from "./AgendamentoProvider";
+import { saveAgendamento } from "./agendamentoStore";
 import { formatBRLFromCents } from "@/lib/money";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -15,19 +16,63 @@ import { useAuth } from "@/components/auth/AuthProvider";
 export function CheckoutStep() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { brand, model, services, totalCents, reset } = useAgendamento();
+  const { brand, model, services, totalCents, reset, hydrated } = useAgendamento();
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [redirecting, setRedirecting] = React.useState(false);
+  const navigatingRef = React.useRef(false);
 
+  // Extra safety: persist current draft before sending the user to /login or /cadastro.
+  const persistDraftNow = React.useCallback(() => {
+    try {
+      saveAgendamento({ brand, model, services });
+    } catch {
+      // ignore
+    }
+  }, [brand, model, services]);
+
+  // Avoid flashing the "missing steps" banner for a split-second when coming
+  // back from /login or /cadastro. If something is missing, immediately
+  // redirect to the correct step and render a neutral loading state.
+  React.useEffect(() => {
+    if (!hydrated) return;
+    if (navigatingRef.current) return;
+
+    if (!brand) {
+      setRedirecting(true);
+      router.replace(rotas.agendamento.marca());
+      return;
+    }
+    if (!model) {
+      setRedirecting(true);
+      router.replace(rotas.agendamento.modelo());
+      return;
+    }
+    if (services.length === 0) {
+      setRedirecting(true);
+      router.replace(rotas.agendamento.servicos());
+      return;
+    }
+
+    setRedirecting(false);
+  }, [hydrated, brand, model, services.length, router]);
+
+  // When returning from /login or /cadastro, the provider needs a tick to restore persisted state.
+  // Don't show "missing steps" or force the user to restart before we are hydrated.
+  if (!hydrated || redirecting) {
+    return (
+      <Card className="ring-white/10">
+        <div className="text-sm text-dracula-text/70">Carregando seu pedido…</div>
+      </Card>
+    );
+  }
+
+  // If something is missing, we'll have redirected in the effect above.
+  // Render a neutral loading state (never the error banner) to avoid flashes.
   if (!brand || !model || services.length === 0) {
     return (
-      <Card className="ring-dracula-accent2/40">
-        <div className="text-dracula-text">
-          Você precisa completar as etapas anteriores.{" "}
-          <Link className="underline text-dracula-accent" href={rotas.agendamento.marca()}>
-            Voltar ao início
-          </Link>
-        </div>
+      <Card className="ring-white/10">
+        <div className="text-sm text-dracula-text/70">Carregando seu pedido…</div>
       </Card>
     );
   }
@@ -41,6 +86,8 @@ export function CheckoutStep() {
 
     // If not logged in, redirect to login and come back to checkout.
     if (!user) {
+      // Ensure the in-progress selection is persisted before leaving the flow.
+      persistDraftNow();
       router.push(`/login?returnTo=${encodeURIComponent(rotas.agendamento.checkout())}`);
       return;
     }
@@ -51,8 +98,14 @@ export function CheckoutStep() {
         modelId: model.id,
         serviceIds: services.map((s) => s.id),
       });
+      // Prevent the "missing steps" guard from firing while we navigate away.
+      navigatingRef.current = true;
+      setRedirecting(true);
+      // After finishing (creating) a request, take the user straight to the order area.
+      // This matches the classic UX: confirm -> go to the request thread.
+      router.push(`/meus-pedidos/${encodeURIComponent(order.id)}`);
+      // Clear the in-progress draft only after we started navigating away.
       reset();
-      router.push(rotas.agendamento.confirmado(order.id));
     } catch (e: any) {
       setError(e.message || "Erro ao criar pedido");
     } finally {
@@ -121,6 +174,7 @@ export function CheckoutStep() {
               {/* Login (igual ao do header) */}
               <Link
                 href={`/login?returnTo=${encodeURIComponent(rotas.agendamento.checkout())}`}
+                onClick={persistDraftNow}
                 className="inline-flex items-center justify-center rounded-xl bg-white/[0.14] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.20] glass-fix transition hover:bg-white/[0.18]"
                 aria-label="Login"
               >
@@ -130,6 +184,7 @@ export function CheckoutStep() {
               {/* Cadastro (inverso): fundo branco + texto escuro */}
               <Link
                 href={`/cadastro?returnTo=${encodeURIComponent(rotas.agendamento.checkout())}`}
+                onClick={persistDraftNow}
                 className="inline-flex items-center justify-center rounded-xl bg-white/90 px-4 py-2 text-sm font-semibold text-dracula-bg ring-1 ring-white/20 transition hover:bg-white"
                 aria-label="Cadastro"
               >

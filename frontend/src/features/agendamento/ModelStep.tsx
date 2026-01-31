@@ -8,10 +8,11 @@ import { useAgendamento } from "./AgendamentoProvider";
 import type { Model } from "@/types/api";
 import { ChoiceCard } from "@/components/ui/ChoiceCard";
 import { BackButton } from "@/components/ui/BackButton";
+import { Card } from "@/components/ui/Card";
 
 export function ModelStep() {
   const router = useRouter();
-  const { brand, setModel } = useAgendamento();
+  const { brand, setModel, hydrated } = useAgendamento();
 
   const [models, setModels] = React.useState<Model[]>([]);
   const [error, setError] = React.useState<string | null>(null);
@@ -21,6 +22,8 @@ export function ModelStep() {
   const navTimer = React.useRef<number | null>(null);
 
   React.useEffect(() => {
+    // Avoid redirecting before persisted state is loaded (e.g. returning from /login).
+    if (!hydrated) return;
     if (!brand) {
       router.replace(rotas.agendamento.marca());
       return;
@@ -32,7 +35,7 @@ export function ModelStep() {
       .listModels(brand.slug || brand.id)
       .then(setModels)
       .catch((e: any) => setError(e?.message || "Erro ao carregar modelos"));
-  }, [brand, router]);
+  }, [brand, router, hydrated]);
 
 
   React.useEffect(() => {
@@ -41,6 +44,14 @@ export function ModelStep() {
       if (navTimer.current) window.clearTimeout(navTimer.current);
     };
   }, []);
+
+  if (!hydrated) {
+    return (
+      <Card className="ring-white/10">
+        <div className="text-sm text-dracula-text/70">Carregando suas escolhas…</div>
+      </Card>
+    );
+  }
 
   return (
     <section className="w-full">
