@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { rotas } from "@/lib/rotas";
 import { api } from "@/services/api";
@@ -18,8 +19,14 @@ function statusPT(status: string) {
   return map[s] ?? status;
 }
 
-export default function Page({ params }: { params: { orderId: string } }) {
-  const code = params.orderId;
+export default function Page() {
+  // Next.js (App Router) may pass params as a Promise to Client Components.
+  // Use the navigation hook instead of accessing props directly.
+  const params = useParams();
+  const rawOrderId = (params as any)?.orderId;
+  const code = String(Array.isArray(rawOrderId) ? rawOrderId[0] : rawOrderId ?? "")
+    .trim()
+    .toUpperCase();
 
   const { user } = useAuth();
 
@@ -36,6 +43,14 @@ export default function Page({ params }: { params: { orderId: string } }) {
     let mounted = true;
     setLoading(true);
     setError(null);
+
+    if (!code) {
+      setError("Código do pedido inválido");
+      setLoading(false);
+      return () => {
+        mounted = false;
+      };
+    }
 
     api
       .getOrder(code)
