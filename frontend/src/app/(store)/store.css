@@ -1,0 +1,115 @@
+:root {
+  --bg: #f6f7fb;
+  --card: #ffffff;
+  --text: #0f172a;
+  --muted: #5b6475;
+  --border: #e6e8ef;
+  --primary: #111827;
+  --primaryText: #ffffff;
+  --radius: 14px;
+  --shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+}
+
+/* Store area base */
+.storeShell {
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--text);
+  padding: 22px 14px;
+}
+
+.storeContainer {
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.h2 {
+  font-size: 26px;
+  margin: 12px 0 4px;
+  font-weight: 900;
+}
+
+.sub {
+  margin: 0 0 14px;
+  color: var(--muted);
+}
+
+.surface {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+.grid {
+  display: grid;
+  gap: 12px;
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .grid-2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btnRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.btn {
+  border: 1px solid var(--border);
+  background: #fff;
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.btn:hover {
+  filter: brightness(0.98);
+}
+
+.btnPrimary {
+  background: var(--primary);
+  color: var(--primaryText);
+  border-color: transparent;
+}
+
+.btnDisabled,
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: #fff;
+  outline: none;
+}
+
+.input:focus {
+  border-color: #cbd5e1;
+}
+
+.cardTitle {
+  font-weight: 900;
+}
+
+.cardMeta {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 2px;
+}

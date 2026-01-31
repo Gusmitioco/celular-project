@@ -8,6 +8,8 @@ import { ClientShell } from "@/components/layout/ClientShell";
 import { Card } from "@/components/ui/Card";
 import { api } from "@/services/api";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getSocket } from "@/lib/socket";
+import type { Socket } from "socket.io-client";
 
 type Header = {
   id: number;
@@ -76,6 +78,13 @@ export default function Page() {
   const [draft, setDraft] = React.useState("");
   const [sending, setSending] = React.useState(false);
 
+  // realtime (socket.io) for chat
+  const [socket, setSocket] = React.useState<Socket | null>(null);
+  const [rtStatus, setRtStatus] = React.useState<"connecting" | "online" | "offline">("offline");
+  const [joinedRequestId, setJoinedRequestId] = React.useState<number | null>(null);
+  const joinedRequestIdRef = React.useRef<number | null>(null);
+  const chatEndRef = React.useRef<HTMLDivElement | null>(null);
+
   const loginHref = `/login?returnTo=${encodeURIComponent(`/meus-pedidos/${code}`)}`;
   const cadastroHref = `/cadastro?returnTo=${encodeURIComponent(`/meus-pedidos/${code}`)}`;
 
@@ -128,6 +137,73 @@ export default function Page() {
     }
   }, [code, user, header?.status]);
 
+  // Realtime chat: connect + join request room (customer joins by code)
+  React.useEffect(() => {
+    if (!user) return;
+    if (!code) return;
+    if (!chatAllowed(header?.status)) {
+      setJoinedRequestId(null);
+      joinedRequestIdRef.current = null;
+      return;
+    }
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "";
+    if (!apiUrl) return;
+
+    const s = getSocket(apiUrl);
+    setSocket(s);
+    setRtStatus("connecting");
+
+    const onConnect = () => setRtStatus("online");
+    const onDisconnect = () => setRtStatus("offline");
+
+    s.on("connect", onConnect);
+    s.on("disconnect", onDisconnect);
+
+    // join by code
+    s.emit("request:join", { code }, (ack: any) => {
+      if (!ack?.ok) {
+        setJoinedRequestId(null);
+        joinedRequestIdRef.current = null;
+        // keep REST working; just show small hint
+        setRtStatus("offline");
+        return;
+      }
+      const rid = Number(ack.requestId);
+      if (!Number.isFinite(rid)) return;
+      setJoinedRequestId(rid);
+      joinedRequestIdRef.current = rid;
+    });
+
+    const onNewMessage = (m: any) => {
+      const rid = Number(m?.request_id);
+      const msgId = Number(m?.id);
+      if (!Number.isFinite(rid) || !Number.isFinite(msgId)) return;
+
+      // For customer sockets we only join one request at a time, but keep a guard.
+      const current = joinedRequestIdRef.current;
+      if (current && rid !== current) return;
+
+      setMessages((prev) => {
+        if (prev.some((x) => x.id === msgId)) return prev;
+        return [...prev, m];
+      });
+      setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: "smooth" }), 50);
+    };
+
+    s.on("message:new", onNewMessage);
+
+    return () => {
+      // Best-effort leave
+      const rid = joinedRequestIdRef.current;
+      if (rid) s.emit("request:leave", { requestId: rid });
+      s.off("connect", onConnect);
+      s.off("disconnect", onDisconnect);
+      s.off("message:new", onNewMessage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, code, header?.status]);
+
   React.useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -146,6 +222,12 @@ export default function Page() {
     loadMessages();
   }, [user, header, loadMessages]);
 
+  React.useEffect(() => {
+    if (!chatAllowed(header?.status)) return;
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length]);
+
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(code);
@@ -162,7 +244,8 @@ export default function Page() {
     try {
       await api.sendMyRequestMessage(code, msg);
       setDraft("");
-      await loadMessages();
+      // REST endpoint already emits realtime events; also refresh as fallback
+      if (!socket) await loadMessages();
     } catch {
       setMsgError("Não foi possível enviar a mensagem agora.");
     } finally {
@@ -280,6 +363,18 @@ export default function Page() {
                   {msgError ? <p className="mt-2 text-sm text-dracula-accent2">{msgError}</p> : null}
 
                   <div className="mt-3 max-h-[320px] overflow-auto rounded-xl bg-black/15 p-3 ring-1 ring-white/10">
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-[11px] text-dracula-text/55">
+                        Tempo real: {rtStatus === "online" ? "online" : rtStatus === "connecting" ? "conectando" : "offline"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={loadMessages}
+                        className="text-[11px] font-semibold text-dracula-accent hover:brightness-95"
+                      >
+                        Atualizar
+                      </button>
+                    </div>
                     {msgLoading ? (
                       <p className="text-sm text-dracula-text/70">Carregando mensagens…</p>
                     ) : messages.length === 0 ? (
@@ -299,6 +394,7 @@ export default function Page() {
                             <div className="mt-1 text-[10px] text-dracula-text/55">{formatDateBR(m.created_at)}</div>
                           </div>
                         ))}
+                        <div ref={chatEndRef} />
                       </div>
                     )}
                   </div>

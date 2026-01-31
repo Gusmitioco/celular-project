@@ -12,6 +12,11 @@ export function SiteBackground({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isHome = pathname === "/";
 
+  // Áreas internas (admin/store) usam seus próprios layouts/CSS.
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/store")) {
+    return <>{children}</>;
+  }
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-dracula-page text-dracula-text">
       {/* Camadas de fundo */}

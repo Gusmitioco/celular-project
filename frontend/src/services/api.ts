@@ -1,4 +1,20 @@
-const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+/**
+ * The project historically used NEXT_PUBLIC_API_URL like "http://localhost:3001/api".
+ * Newer code sometimes expects the host without the "/api" suffix.
+ *
+ * To avoid double "/api/api" bugs, we normalize here:
+ * - remove trailing slashes
+ * - remove a trailing "/api" (with optional slashes)
+ */
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+function normalizeBaseUrl(input: string) {
+  const noTrail = input.replace(/\/+$/, "");
+  // remove trailing "/api" (optionally wrapped with slashes)
+  return noTrail.replace(/\/?api$/i, "");
+}
+
+const baseUrl = normalizeBaseUrl(rawBaseUrl);
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${baseUrl}${path}`, {

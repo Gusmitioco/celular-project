@@ -13,6 +13,9 @@ export function Header() {
   // A Home tem topbar própria. Para não duplicar, ocultamos nela.
   if (pathname === "/") return null;
 
+  // Áreas internas não usam o header público.
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/store")) return null;
+
   return (
     <header
       className={
