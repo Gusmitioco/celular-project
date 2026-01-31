@@ -31,7 +31,18 @@ async function http<T>(path: string, init?: RequestInit): Promise<T> {
 
   if (!res.ok) {
     const text = await res.text().catch(() => "");
-    throw new Error(`HTTP ${res.status} - ${text || res.statusText}`);
+    let parsed: any = null;
+    try {
+      parsed = text ? JSON.parse(text) : null;
+    } catch {
+      parsed = null;
+    }
+
+    const err: any = new Error(`HTTP ${res.status} - ${text || res.statusText}`);
+    err.status = res.status;
+    err.bodyText = text;
+    err.bodyJson = parsed;
+    throw err;
   }
 
   return res.json() as Promise<T>;

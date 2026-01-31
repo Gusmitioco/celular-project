@@ -65,6 +65,19 @@ function makeCode() {
 }
 
 /**
+ * Fingerprint used to avoid creating duplicate "created" requests for a customer.
+ * "Duplicate" means: same store + model + EXACT same service ids set.
+ *
+ * We rely on parseIdArray() to give us a stable, sorted unique serviceIds list.
+ * This fingerprint is stored in service_requests.created_fingerprint and enforced
+ * by the partial unique index created in database/09_request_fingerprint.sql.
+ */
+function makeCreatedFingerprint(storeId: number, modelId: number, serviceIds: number[]) {
+  const stable = `${storeId}|${modelId}|${serviceIds.join(",")}`;
+  return crypto.createHash("sha256").update(stable).digest("hex");
+}
+
+/**
  * Parse + sanitize numeric id arrays safely.
  * Ensures TypeScript gets number[] and removes duplicates.
  */
@@ -114,14 +127,44 @@ requestsRouter.post("/", requireCustomer, createRequestLimiter, async (req, res)
     });
   }
 
-  // 2) Duplicate check: same store + model + EXACT SAME services set, only if status='created'
-  const dupRows = await query<{ id: number; code: string; status: string }>(
+  // 2) Duplicate guard: same store + model + EXACT SAME services set, only while status='created'.
+  // We implement this via created_fingerprint + a partial unique index.
+  const createdFingerprint = makeCreatedFingerprint(storeId, modelId, serviceIds);
+
+  // Fast-path: if an identical "created" request already exists, reuse it.
+  // (If the store has already "picked" it up, status changes and this will NOT match.)
+  const existingByFingerprint = await query<{ id: number; code: string; total_cents: number; currency: string }>(
+    `
+    SELECT id, code, total_cents, currency
+    FROM service_requests
+    WHERE customer_id = $1
+      AND status = 'created'
+      AND created_fingerprint = $2
+    ORDER BY created_at DESC
+    LIMIT 1
+    `,
+    [customer.id, createdFingerprint]
+  );
+
+  if (existingByFingerprint[0]) {
+    return res.json({
+      ok: true,
+      reused: true,
+      requestId: existingByFingerprint[0].id,
+      code: existingByFingerprint[0].code,
+      totalCents: Number(existingByFingerprint[0].total_cents ?? 0),
+      currency: existingByFingerprint[0].currency ?? 'BRL',
+    });
+  }
+
+  // Back-compat: older rows may not have created_fingerprint populated.
+  // Fall back to an exact items-set match (same as before) for status='created'.
+  const existingByItems = await query<{ id: number; code: string }>(
     `
     WITH reqs AS (
       SELECT
         r.id,
         r.code,
-        r.status,
         array_agg(i.service_id ORDER BY i.service_id) AS services
       FROM service_requests r
       JOIN service_request_items i ON i.request_id = r.id
@@ -131,21 +174,15 @@ requestsRouter.post("/", requireCustomer, createRequestLimiter, async (req, res)
         AND r.status = 'created'
       GROUP BY r.id
     )
-    SELECT id, code, status
+    SELECT id, code, total_cents, currency
     FROM reqs
     WHERE services = $4::bigint[]
     LIMIT 1
     `,
     [customer.id, storeId, modelId, serviceIds]
   );
-
-  if (dupRows[0]) {
-    return res.status(409).json({
-      ok: false,
-      error: "duplicate_created",
-      code: dupRows[0].code,
-      status: dupRows[0].status,
-    });
+  if (existingByItems[0]) {
+    return res.json({ ok: true, reused: true, requestId: existingByItems[0].id, code: existingByItems[0].code });
   }
 
   // 3) Load prices for this store+model for requested services
@@ -181,19 +218,42 @@ requestsRouter.post("/", requireCustomer, createRequestLimiter, async (req, res)
 
     for (let i = 0; i < 5; i++) {
       code = makeCode();
-      const ins = await client.query(
-        `
-        INSERT INTO service_requests (code, customer_id, store_id, model_id, total_cents, currency, status)
-        VALUES ($1, $2, $3, $4, $5, 'BRL', 'created')
-        ON CONFLICT (code) DO NOTHING
-        RETURNING id
-        `,
-        [code, customer.id, storeId, modelId, totalCents]
-      );
+      try {
+        const ins = await client.query(
+          `
+          INSERT INTO service_requests (code, customer_id, store_id, model_id, total_cents, currency, status, created_fingerprint)
+          VALUES ($1, $2, $3, $4, $5, 'BRL', 'created', $6)
+          ON CONFLICT (code) DO NOTHING
+          RETURNING id
+          `,
+          [code, customer.id, storeId, modelId, totalCents, createdFingerprint]
+        );
 
-      if (ins.rows[0]?.id) {
-        createdId = Number(ins.rows[0].id);
-        break;
+        if (ins.rows[0]?.id) {
+          createdId = Number(ins.rows[0].id);
+          break;
+        }
+      } catch (e: any) {
+        // If the fingerprint unique index hits, reuse the existing request.
+        if (String(e?.code) === '23505') {
+          const dup = await client.query<{ id: number; code: string }>(
+            `
+            SELECT id, code
+            FROM service_requests
+            WHERE customer_id = $1
+              AND status = 'created'
+              AND created_fingerprint = $2
+            ORDER BY created_at DESC
+            LIMIT 1
+            `,
+            [customer.id, createdFingerprint]
+          );
+          if (dup.rows[0]) {
+            await client.query('ROLLBACK');
+            return res.json({ ok: true, reused: true, requestId: Number(dup.rows[0].id), code: dup.rows[0].code });
+          }
+        }
+        // Otherwise assume code collision (or any other transient issue) and try again.
       }
     }
 
@@ -257,6 +317,82 @@ requestsRouter.post("/public", requireCustomer, createRequestLimiter, async (req
   const storeId = await pickStoreForRequest({ storeId: storeIdRaw, cityName, modelId, serviceIds });
   if (!storeId) return res.status(400).json({ ok: false, error: "store_not_found_for_selection" });
 
+  // Duplicate guard (same customer + store + model + exact services set) while status='created'.
+  // IMPORTANT: run this BEFORE the "max created" check so that reusing an existing
+  // request never gets blocked by the limit.
+  const createdFingerprint = makeCreatedFingerprint(storeId, modelId, serviceIds);
+
+  const existingPublic = await query<{ id: number; code: string; total_cents: number; currency: string }>(
+    `
+    SELECT id, code, total_cents, currency
+    FROM service_requests
+    WHERE customer_id = $1
+      AND status = 'created'
+      AND created_fingerprint = $2
+    ORDER BY created_at DESC
+    LIMIT 1
+    `,
+    [customer.id, createdFingerprint]
+  );
+
+  if (existingPublic[0]) {
+    const storeRows = await query<{ name: string; address: string; city: string }>(
+      `SELECT name, address, city FROM stores WHERE id = $1 LIMIT 1`,
+      [storeId]
+    );
+    return res.json({
+      ok: true,
+      reused: true,
+      requestId: existingPublic[0].id,
+      code: existingPublic[0].code,
+      totalCents: Number(existingPublic[0].total_cents ?? 0),
+      currency: existingPublic[0].currency ?? 'BRL',
+      store: storeRows[0] ?? null,
+    });
+  }
+
+  // Back-compat: older rows may not have created_fingerprint populated.
+  // Do the exact items-set match for status='created'.
+  const existingPublicByItems = await query<{ id: number; code: string; total_cents: number; currency: string }>(
+    `
+    WITH reqs AS (
+      SELECT
+        r.id,
+        r.code,
+        r.total_cents,
+        r.currency,
+        array_agg(i.service_id ORDER BY i.service_id) AS services
+      FROM service_requests r
+      JOIN service_request_items i ON i.request_id = r.id
+      WHERE r.customer_id = $1
+        AND r.store_id = $2
+        AND r.model_id = $3
+        AND r.status = 'created'
+      GROUP BY r.id
+    )
+    SELECT id, code
+    FROM reqs
+    WHERE services = $4::bigint[]
+    LIMIT 1
+    `,
+    [customer.id, storeId, modelId, serviceIds]
+  );
+  if (existingPublicByItems[0]) {
+    const storeRows = await query<{ name: string; address: string; city: string }>(
+      `SELECT name, address, city FROM stores WHERE id = $1 LIMIT 1`,
+      [storeId]
+    );
+    return res.json({
+      ok: true,
+      reused: true,
+      requestId: existingPublicByItems[0].id,
+      code: existingPublicByItems[0].code,
+      totalCents: Number(existingPublicByItems[0].total_cents ?? 0),
+      currency: existingPublicByItems[0].currency ?? 'BRL',
+      store: storeRows[0] ?? null,
+    });
+  }
+
   // Apply same guardrails as authenticated flow only when we have a customer
   if (customer?.id) {
     const createdCountRows = await query<{ n: number }>(
@@ -301,23 +437,55 @@ requestsRouter.post("/public", requireCustomer, createRequestLimiter, async (req
 
     const totalCents = serviceIds.reduce((acc, sid) => acc + (priceMap.get(sid) ?? 0), 0);
 
-    // Generate unique code
-    let code = makeCode();
+    // Generate unique code (and enforce no duplicate "created" request via created_fingerprint)
+    let code = "";
     let createdId: number | null = null;
     for (let i = 0; i < 5; i++) {
+      code = makeCode();
       try {
         const ins = await client.query<{ id: number }>(
           `
-          INSERT INTO service_requests (code, customer_id, store_id, model_id, total_cents, currency, status)
-          VALUES ($1, $2, $3, $4, $5, 'BRL', 'created')
+          INSERT INTO service_requests (code, customer_id, store_id, model_id, total_cents, currency, status, created_fingerprint)
+          VALUES ($1, $2, $3, $4, $5, 'BRL', 'created', $6)
           RETURNING id
           `,
-          [code, customer?.id ?? null, storeId, modelId, totalCents]
+          [code, customer?.id ?? null, storeId, modelId, totalCents, createdFingerprint]
         );
         createdId = Number(ins.rows[0]?.id ?? 0) || null;
         break;
-      } catch {
-        code = makeCode();
+      } catch (e: any) {
+        // If the fingerprint unique index hits, reuse the existing request.
+        if (String(e?.code) === '23505') {
+          const dup = await client.query<{ id: number; code: string; total_cents: number; currency: string }>(
+            `
+            SELECT id, code, total_cents, currency
+            FROM service_requests
+            WHERE customer_id = $1
+              AND status = 'created'
+              AND created_fingerprint = $2
+            ORDER BY created_at DESC
+            LIMIT 1
+            `,
+            [customer.id, createdFingerprint]
+          );
+          if (dup.rows[0]) {
+            await client.query('ROLLBACK');
+            const storeRows = await query<{ name: string; address: string; city: string }>(
+              `SELECT name, address, city FROM stores WHERE id = $1 LIMIT 1`,
+              [storeId]
+            );
+            return res.json({
+              ok: true,
+              reused: true,
+              requestId: Number(dup.rows[0].id),
+              code: dup.rows[0].code,
+              totalCents: Number(dup.rows[0].total_cents ?? 0),
+              currency: dup.rows[0].currency ?? 'BRL',
+              store: storeRows[0] ?? null,
+            });
+          }
+        }
+        // Otherwise (likely code collision), try again.
       }
     }
 

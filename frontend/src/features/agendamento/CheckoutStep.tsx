@@ -18,6 +18,7 @@ export function CheckoutStep() {
   const { user, isLoading: authLoading } = useAuth();
   const { brand, model, services, totalCents, reset, hydrated } = useAgendamento();
   const [error, setError] = React.useState<string | null>(null);
+  const [limitInfo, setLimitInfo] = React.useState<{ max: number } | null>(null);
   const [loading, setLoading] = React.useState(false);
   const [redirecting, setRedirecting] = React.useState(false);
   const navigatingRef = React.useRef(false);
@@ -79,6 +80,7 @@ export function CheckoutStep() {
 
   async function confirm() {
     setError(null);
+    setLimitInfo(null);
 
     // Old behavior: only generate a request/code after the customer is logged in.
     // If auth state is still loading, avoid redirecting prematurely.
@@ -107,7 +109,26 @@ export function CheckoutStep() {
       // Clear the in-progress draft only after we started navigating away.
       reset();
     } catch (e: any) {
-      setError(e.message || "Erro ao criar pedido");
+      const body = e?.bodyJson ?? null;
+
+      // If an identical "created" request already exists, just reuse it and redirect.
+      // (This matches the classic UX: no new code, take user to the existing order.)
+      if (body?.error === "duplicate_created" && body?.code) {
+        navigatingRef.current = true;
+        setRedirecting(true);
+        router.push(`/meus-pedidos/${encodeURIComponent(String(body.code))}`);
+        reset();
+        return;
+      }
+
+      // Friendly UX for the "max created requests" rule.
+      if (body?.error === "created_limit_reached") {
+        const max = Number(body?.max ?? 5);
+        setLimitInfo({ max: Number.isFinite(max) ? max : 5 });
+        return;
+      }
+
+      setError(e?.message || "Erro ao criar pedido");
     } finally {
       setLoading(false);
     }
@@ -122,7 +143,35 @@ export function CheckoutStep() {
         </p>
       </div>
 
-      {error ? <div className="text-sm text-dracula-accent2">Erro: {error}</div> : null}
+      {limitInfo ? (
+        <Card className="ring-white/10">
+          <div className="text-sm font-semibold text-dracula-text">Limite de pedidos abertos</div>
+          <p className="mt-2 text-sm text-dracula-text/75">
+            Você já tem <span className="font-semibold text-dracula-text">{limitInfo.max} pedidos abertos</span>.
+            Para criar um novo pedido, aguarde a loja iniciar o atendimento (o status muda) ou finalize/cancele um dos pedidos atuais.
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/meus-pedidos"
+              className="inline-flex items-center justify-center rounded-xl bg-white/90 px-4 py-2 text-sm font-semibold text-dracula-bg ring-1 ring-white/20 transition hover:bg-white"
+            >
+              Ver meus pedidos
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                setLimitInfo(null);
+                setError(null);
+              }}
+              className="inline-flex items-center justify-center rounded-xl bg-white/[0.14] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.20] glass-fix transition hover:bg-white/[0.18]"
+            >
+              Entendi
+            </button>
+          </div>
+        </Card>
+      ) : error ? (
+        <div className="text-sm text-dracula-accent2">Erro: {error}</div>
+      ) : null}
 
       <Card>
         <div className="text-sm text-dracula-text/70">Serviços selecionados</div>
