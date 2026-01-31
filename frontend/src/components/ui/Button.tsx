@@ -26,7 +26,11 @@ export function Button({ variant = "primary", className, children, ...props }: P
       "bg-dracula-accent text-dracula-bg shadow-[0_18px_45px_-20px_rgba(80,250,123,0.9)] hover:brightness-110 hover:shadow-[0_22px_60px_-22px_rgba(80,250,123,1)] active:translate-y-[1px]",
     // Botão de confirmação (ex.: serviços) com cor diferente e sensação de finalização.
     confirm:
-      "bg-gradient-to-r from-[#8b5cf6] via-[#a855f7] to-[#ec4899] text-white shadow-[0_18px_55px_-25px_rgba(168,85,247,0.95)] hover:brightness-110 hover:shadow-[0_26px_75px_-28px_rgba(236,72,153,0.95)] active:translate-y-[1px]",
+      // Gradiente (laranja no topo esquerdo → roxo) com o mesmo "elevated + glow" do resto do projeto.
+      // Damos um pouco mais de espaço pro laranja na esquerda (stops) pra ficar mais "marcante".
+      "bg-[linear-gradient(135deg,#f97316_0%,#f97316_22%,#a855f7_62%,#7c3aed_100%)] text-white " +
+      "shadow-[0_18px_55px_-25px_rgba(249,115,22,0.75)] hover:brightness-110 hover:shadow-[0_26px_75px_-28px_rgba(124,58,237,0.85)] " +
+      "active:translate-y-[1px]",
   };
 
   return (

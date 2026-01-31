@@ -141,8 +141,10 @@ export default function CadastroPage() {
             <div className="text-xs text-dracula-text/70">
               Já tem conta?{" "}
               <Link
-                className="font-semibold text-dracula-accent hover:brightness-95"
+                className="font-semibold text-dracula-accent hover:brightness-95 no-drag"
                 href={`/login?returnTo=${encodeURIComponent(returnTo)}`}
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
               >
                 Fazer login
               </Link>
@@ -160,7 +162,12 @@ export default function CadastroPage() {
             </p>
 
             <div className="pt-2">
-              <Link href={returnTo} className="text-sm font-semibold text-dracula-accent hover:brightness-95">
+              <Link
+                href={returnTo}
+                className="text-sm font-semibold text-dracula-accent hover:brightness-95 no-drag"
+                draggable={false}
+                onDragStart={(e) => e.preventDefault()}
+              >
                 Voltar para onde eu estava →
               </Link>
             </div>

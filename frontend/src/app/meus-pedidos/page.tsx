@@ -2,10 +2,14 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { ClientShell } from "@/components/layout/ClientShell";
 import { Card } from "@/components/ui/Card";
+import { BackButton } from "@/components/ui/BackButton";
+import { Button } from "@/components/ui/Button";
 import { api } from "@/services/api";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { rotas } from "@/lib/rotas";
 
 type Row = {
   id: number;
@@ -37,6 +41,7 @@ function formatMoneyBRL(cents: number) {
 }
 
 export default function Page() {
+  const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -121,7 +126,30 @@ export default function Page() {
 
         {user && !loading && !error && rows.length === 0 ? (
           <Card>
-            <p className="text-sm text-dracula-text/80">Você ainda não tem pedidos.</p>
+            <div className="flex flex-col items-start gap-4">
+              <div>
+                <p className="text-lg font-semibold text-dracula-text">Ainda não tem nada aqui</p>
+                <p className="mt-2 text-sm text-dracula-text/70">
+                  Quando você confirmar um agendamento, ele vai aparecer nesta lista — com status, código e histórico.
+                </p>
+                <p className="mt-2 text-sm text-dracula-text/70">
+                  Que tal fazer seu primeiro pedido agora? É rapidinho 🙂
+                </p>
+              </div>
+
+              <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {/* Volta para a página anterior */}
+                <BackButton onClick={() => router.back()} />
+
+                {/* CTA para iniciar um novo pedido (laranja no topo esquerdo → roxo) */}
+                <Button
+                  variant="confirm"
+                  onClick={() => router.push(rotas.agendamento.marca())}
+                >
+                  Fazer um pedido
+                </Button>
+              </div>
+            </div>
           </Card>
         ) : null}
 
@@ -155,7 +183,7 @@ export default function Page() {
 
                 <div className="mt-4">
                   <Link
-                    href={`/agendamento/confirmado/${encodeURIComponent(r.code)}`}
+                    href={`/meus-pedidos/${encodeURIComponent(r.code)}`}
                     className="text-sm font-semibold text-dracula-accent hover:brightness-95"
                   >
                     Ver detalhes →

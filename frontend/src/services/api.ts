@@ -288,11 +288,34 @@ export const api = {
       totalCents: Number(r.total_cents ?? 0),
       createdAt: r.created_at,
       items: [],
+      status: r.status,
       // extra fields for UI convenience
       storeName: r.store_name,
       storeAddress: r.store_address,
       modelName: r.model_name,
     } as any;
+  },
+
+  // Customer request detail (header + items)
+  getMyRequest: async (code: string) => {
+    const out = await http<{ ok: boolean; header: any; items: any[] }>(`/api/requests/me/${encodeURIComponent(code)}`);
+    return out;
+  },
+
+  // Customer chat
+  listMyRequestMessages: async (code: string) => {
+    const out = await http<{ ok: boolean; rows: any[] }>(
+      `/api/requests/me/${encodeURIComponent(code)}/messages`
+    );
+    return out.rows;
+  },
+
+  sendMyRequestMessage: async (code: string, message: string) => {
+    const out = await http<{ ok: boolean; id?: number }>(
+      `/api/requests/me/${encodeURIComponent(code)}/messages`,
+      { method: "POST", body: JSON.stringify({ message }) }
+    );
+    return out.ok;
   },
 
   // Customer area
