@@ -23,7 +23,9 @@ export function BrandStep() {
 
   React.useEffect(() => {
     api
-      .listBrands()
+      // Customer flow should use backend-provided slugs.
+      // This avoids passing numeric brand IDs as "brandSlug" when an admin session exists.
+      .listPublicBrands()
       .then(setBrands)
       .catch((e: any) => setError(e?.message || "Erro ao carregar marcas"));
   }, []);

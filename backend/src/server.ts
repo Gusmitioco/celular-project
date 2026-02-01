@@ -1,73 +1,38 @@
-import "dotenv/config";
-import express from "express";
-import http from "http";
-import cors from "cors";
-import cookieParser from "cookie-parser";
-import { apiRouter } from "./routes/index.ts";
-import { webhookTestRouter } from "./routes/webhookTest.routes";
-import { initRealtime } from "./realtime/io";
+// Bootstrap entrypoint.
+//
+// In ESM, static imports are evaluated before any top-level code in this file.
+// We want to load .env files *before* importing the rest of the app (which
+// reads process.env.DATABASE_URL in src/db/index.ts).
 
-const app = express();
+import fs from "fs";
+import path from "path";
+import dotenv from "dotenv";
 
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
-import slowDown from "express-slow-down";
+function tryLoadEnv(p: string) {
+  if (!fs.existsSync(p)) return false;
+  dotenv.config({ path: p, override: false });
+  return true;
+}
 
-app.set("trust proxy", 1); // important if behind proxy (railway/render/vercel). ok locally too.
+// Candidates, in priority order.
+// Works whether you run from repo root or from ./backend.
+const cwd = process.cwd();
+const candidates = [
+  path.resolve(cwd, ".env"),
+  path.resolve(cwd, "backend", ".env"),
+  path.resolve(cwd, "..", ".env"),
+  path.resolve(cwd, "..", "..", ".env"),
+];
 
-app.use(helmet());
+for (const p of candidates) {
+  if (tryLoadEnv(p)) break;
+}
 
-// limit JSON size (prevents huge payload spam)
-app.use(express.json({ limit: "32kb" }));
-
-const apiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 min
-  max: 120,            // 120 requests/min per IP
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { ok: false, error: "rate_limited" },
-});
-
-app.use("/api", apiLimiter);
-
-const apiSlowdown = slowDown({
-  windowMs: 60 * 1000,
-  delayAfter: 60, // after 60 req/min start slowing down
-  delayMs: () => 250, // +250ms per request over the limit
-});
-
-app.use("/api", apiSlowdown);
-
-app.use(cookieParser());
-
-app.use(
-  cors({
-    origin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
-    credentials: true,
-  })
-);
-
-// Local webhook receiver for testing
-app.use("/webhook", webhookTestRouter);
-
-// Your API routes
-app.use("/api", apiRouter);
-
-
-app.use((err: any, _req: any, res: any, _next: any) => {
-  console.error("Unhandled error:", err);
-  res.status(500).json({ ok: false, error: "internal_error" });
-});
-
-
-
-const port = Number(process.env.PORT ?? 3001);
-
-// HTTP server (needed for Socket.IO)
-const server = http.createServer(app);
-
-// Real-time chat
-initRealtime(server);
-
-server.listen(port, () => console.log(`Backend running on http://localhost:${port}`));
-
+// Import the real server after env is loaded.
+// - In dev (tsx), we can import the TS module.
+// - In prod (compiled), we need to import the JS module.
+try {
+  await import("./serverMain.ts");
+} catch {
+  await import("./serverMain.js");
+}

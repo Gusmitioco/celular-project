@@ -1,0 +1,370 @@
+/* Admin area theme — aligned with public (Dracula / purple) UI.
+   Scoped to .admin so it never leaks into the public site. */
+
+.admin {
+  /* Theme tokens (match client vibe) */
+  --bg0: #120f1f;
+  --bg1: #1a1430;
+
+  --card: rgba(0, 0, 0, 0.20);
+  --card2: rgba(0, 0, 0, 0.28);
+
+  --text: rgba(248, 248, 242, 0.95);
+  --muted: rgba(248, 248, 242, 0.72);
+  --muted2: rgba(248, 248, 242, 0.55);
+
+  /* IMPORTANT: several components use these vars in inline style */
+  --border: rgba(255, 255, 255, 0.12);
+  --border2: rgba(255, 255, 255, 0.18);
+  --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+
+  --radius: 18px;
+
+  --primary: rgba(255, 255, 255, 0.90);
+  --primaryText: #1a1430;
+
+  min-height: 100vh;
+  color: var(--text);
+  background:
+    radial-gradient(1200px 700px at 18% 10%, rgba(168, 85, 247, 0.35) 0%, rgba(168, 85, 247, 0.05) 52%, rgba(0, 0, 0, 0) 70%),
+    radial-gradient(900px 600px at 82% 0%, rgba(236, 72, 153, 0.28) 0%, rgba(236, 72, 153, 0.04) 55%, rgba(0, 0, 0, 0) 74%),
+    radial-gradient(700px 520px at 70% 92%, rgba(139, 92, 246, 0.25) 0%, rgba(139, 92, 246, 0.03) 58%, rgba(0, 0, 0, 0) 75%),
+    linear-gradient(180deg, var(--bg0), var(--bg1));
+}
+
+.admin *,
+.admin *::before,
+.admin *::after {
+  box-sizing: border-box;
+}
+
+.admin a {
+  color: inherit;
+}
+
+.adminMain {
+  width: 100%;
+}
+
+/* Layout helpers used by admin pages */
+.admin .container {
+  width: 100%;
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 26px 16px 60px;
+}
+
+.admin .surface {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+.admin .h1 {
+  font-size: 40px;
+  line-height: 1.1;
+  margin: 18px 0 8px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.admin .h2 {
+  font-size: 30px;
+  line-height: 1.15;
+  margin: 12px 0 6px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.admin .sub {
+  color: var(--muted);
+  margin: 0 0 18px;
+}
+
+.admin small,
+.admin .cardMeta {
+  color: var(--muted);
+}
+
+.admin .grid {
+  display: grid;
+  gap: 12px;
+}
+
+.admin .grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 640px) {
+  .admin .grid-2 {
+    grid-template-columns: 1fr;
+  }
+  .admin .h1 {
+    font-size: 32px;
+  }
+}
+
+/* Optional header styles (kept for compatibility if any page uses them) */
+.admin .header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(18, 15, 31, 0.55);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin .headerInner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 12px;
+}
+
+.admin .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 900;
+}
+
+.admin .brandDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: rgba(236, 72, 153, 0.85);
+}
+
+.admin .headerCenter {
+  color: var(--muted);
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: center;
+}
+
+.admin .headerRight {
+  display: flex;
+  gap: 16px;
+  justify-content: flex-end;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* Cards */
+.admin .cardLink {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px;
+  text-decoration: none;
+  background: var(--card2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  transition: transform 0.08s ease, border-color 0.08s ease, filter 0.08s ease;
+}
+
+.admin .cardLink:hover {
+  transform: translateY(-1px);
+  border-color: var(--border2);
+  filter: brightness(1.03);
+}
+
+.admin .cardTitle {
+  font-weight: 900;
+}
+
+.admin .cardMeta {
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Native form controls (some admin pages use inline styles without .input)
+   Use !important so we can override inline background/foreground defaults. */
+.admin select,
+.admin input:not(.input),
+.admin textarea:not(.input) {
+  background: rgba(0, 0, 0, 0.22) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border2) !important;
+  outline: none;
+}
+
+.admin select {
+  padding: 12px !important;
+  border-radius: 12px !important;
+}
+
+.admin select:focus,
+.admin input:focus,
+.admin textarea:focus {
+  border-color: rgba(255, 255, 255, 0.30) !important;
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.18);
+}
+
+.admin select option {
+  background: #120f1f;
+  color: rgba(248, 248, 242, 0.95);
+}
+
+.admin .chev {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 22px;
+  padding-left: 10px;
+}
+
+/* Stepper (kept for compatibility) */
+.admin .stepper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 18px 0 6px;
+}
+
+.admin .step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.admin .dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+  font-weight: 900;
+  color: var(--muted);
+}
+
+.admin .stepActive .dot {
+  border-color: rgba(168, 85, 247, 0.75);
+  color: rgba(168, 85, 247, 0.95);
+}
+
+.admin .stepDone .dot {
+  background: rgba(255, 255, 255, 0.90);
+  color: var(--primaryText);
+  border-color: rgba(255, 255, 255, 0.90);
+}
+
+.admin .line {
+  width: 56px;
+  height: 2px;
+  background: var(--border);
+}
+
+.admin .lineDone {
+  background: rgba(255, 255, 255, 0.60);
+}
+
+/* Buttons */
+.admin .btnRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.admin .btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.14);
+  color: var(--text);
+  cursor: pointer;
+  text-decoration: none;
+  font-weight: 800;
+  transition: filter 0.08s ease, transform 0.08s ease, border-color 0.08s ease;
+}
+
+.admin .btn:hover {
+  filter: brightness(1.06);
+  border-color: var(--border2);
+}
+
+.admin .btn:active {
+  transform: scale(0.99);
+}
+
+.admin .btnPrimary {
+  background: var(--primary);
+  border-color: rgba(255, 255, 255, 0.35);
+  color: var(--primaryText);
+}
+
+.admin .btnPrimary:hover {
+  filter: brightness(1.02);
+}
+
+.admin .btnDanger {
+  border-color: rgba(255, 121, 198, 0.55);
+  background: rgba(255, 121, 198, 0.12);
+}
+
+.admin .btnDanger:hover {
+  border-color: rgba(255, 121, 198, 0.85);
+  filter: brightness(1.05);
+}
+
+.admin .btnDisabled,
+.admin .btn[aria-disabled="true"],
+.admin .btn:disabled {
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+/* Inputs */
+.admin .input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.18);
+  color: var(--text);
+  outline: none;
+}
+
+.admin .input::placeholder {
+  color: var(--muted2);
+}
+
+.admin .input:focus {
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.18);
+}
+
+/* Small utility blocks */
+.admin .pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: rgba(0, 0, 0, 0.16);
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin .hr {
+  height: 1px;
+  background: var(--border);
+  margin: 14px 0;
+}

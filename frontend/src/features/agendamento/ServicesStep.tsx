@@ -9,10 +9,11 @@ import { ChoiceCard } from "@/components/ui/ChoiceCard";
 import { rotas } from "@/lib/rotas";
 import { formatBRLFromCents } from "@/lib/money";
 import { useAgendamento } from "./AgendamentoProvider";
+import { Card } from "@/components/ui/Card";
 
 export function ServicesStep() {
   const router = useRouter();
-  const { brand, model, services, toggleService, totalCents } = useAgendamento();
+  const { brand, model, services, toggleService, totalCents, hydrated } = useAgendamento();
 
   const [available, setAvailable] = React.useState<any[]>([]);
   const [error, setError] = React.useState<string | null>(null);
@@ -26,8 +27,18 @@ export function ServicesStep() {
   }, [model]);
 
   React.useEffect(() => {
+    // Avoid redirecting before persisted state is loaded (e.g. returning from /login).
+    if (!hydrated) return;
     if (!brand || !model) router.push(rotas.agendamento.marca());
-  }, [brand, model, router]);
+  }, [brand, model, router, hydrated]);
+
+  if (!hydrated) {
+    return (
+      <Card className="ring-white/10">
+        <div className="text-sm text-dracula-text/70">Carregando suas escolhas…</div>
+      </Card>
+    );
+  }
 
   if (!brand || !model) return null;
 

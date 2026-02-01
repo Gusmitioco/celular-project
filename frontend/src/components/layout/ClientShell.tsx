@@ -19,7 +19,10 @@ export function ClientShell({ title, header, steps, children, footer, maxWidthCl
     ) : null);
 
   return (
-    <div className="mx-auto flex min-h-full w-full items-center justify-center px-4 py-8 sm:px-6 sm:py-10">
+    // We avoid vertically centering pages inside the main layout. Vertical centering can
+    // create large empty gaps before the footer and also makes the sticky header overlap
+    // the first card content on some screens.
+    <div className="mx-auto flex w-full items-start justify-center px-4 py-8 sm:px-6 sm:py-10">
       <div
         className={[
           "relative",

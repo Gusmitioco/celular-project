@@ -2,12 +2,14 @@
 
 import React from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 
 import { ClientShell } from "@/components/layout/ClientShell";
 import { Card } from "@/components/ui/Card";
-import { api } from "@/services/api";
+import { api, apiBaseUrl } from "@/services/api";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { getSocket } from "@/lib/socket";
+import type { Socket } from "socket.io-client";
 
 type Header = {
   id: number;
@@ -63,6 +65,8 @@ export default function Page() {
   const params = useParams<{ code: string }>();
   const code = String(params?.code ?? "").trim();
 
+  const router = useRouter();
+
   const { user, isLoading: authLoading } = useAuth();
 
   const [loading, setLoading] = React.useState(true);
@@ -75,6 +79,22 @@ export default function Page() {
   const [messages, setMessages] = React.useState<Msg[]>([]);
   const [draft, setDraft] = React.useState("");
   const [sending, setSending] = React.useState(false);
+  const [deleting, setDeleting] = React.useState(false);
+  const [deleteError, setDeleteError] = React.useState<string | null>(null);
+
+  // realtime (socket.io) for chat
+  const [socket, setSocket] = React.useState<Socket | null>(null);
+  const [rtStatus, setRtStatus] = React.useState<"connecting" | "online" | "offline">("offline");
+  const [joinedRequestId, setJoinedRequestId] = React.useState<number | null>(null);
+  const joinedRequestIdRef = React.useRef<number | null>(null);
+  const chatScrollRef = React.useRef<HTMLDivElement | null>(null);
+
+  const scrollChatToBottom = React.useCallback((behavior: ScrollBehavior = "auto") => {
+    const el = chatScrollRef.current;
+    if (!el) return;
+    // Scroll ONLY inside the chat container to avoid jumping the whole page.
+    el.scrollTo({ top: el.scrollHeight, behavior });
+  }, []);
 
   const loginHref = `/login?returnTo=${encodeURIComponent(`/meus-pedidos/${code}`)}`;
   const cadastroHref = `/cadastro?returnTo=${encodeURIComponent(`/meus-pedidos/${code}`)}`;
@@ -128,6 +148,72 @@ export default function Page() {
     }
   }, [code, user, header?.status]);
 
+  // Realtime chat: connect + join request room (customer joins by code)
+  React.useEffect(() => {
+    if (!user) return;
+    if (!code) return;
+    if (!chatAllowed(header?.status)) {
+      setJoinedRequestId(null);
+      joinedRequestIdRef.current = null;
+      return;
+    }
+
+    // For sockets we want the backend origin, not the REST prefix.
+    const s = getSocket(apiBaseUrl);
+    setSocket(s);
+    setRtStatus("connecting");
+
+    const onConnect = () => setRtStatus("online");
+    const onDisconnect = () => setRtStatus("offline");
+
+    s.on("connect", onConnect);
+    s.on("disconnect", onDisconnect);
+
+    // join by code
+    s.emit("request:join", { code }, (ack: any) => {
+      if (!ack?.ok) {
+        setJoinedRequestId(null);
+        joinedRequestIdRef.current = null;
+        // keep REST working; just show small hint
+        setRtStatus("offline");
+        return;
+      }
+      const rid = Number(ack.requestId);
+      if (!Number.isFinite(rid)) return;
+      setJoinedRequestId(rid);
+      joinedRequestIdRef.current = rid;
+    });
+
+    const onNewMessage = (m: any) => {
+      const rid = Number(m?.request_id);
+      const msgId = Number(m?.id);
+      if (!Number.isFinite(rid) || !Number.isFinite(msgId)) return;
+
+      // For customer sockets we only join one request at a time, but keep a guard.
+      const current = joinedRequestIdRef.current;
+      if (current && rid !== current) return;
+
+      setMessages((prev) => {
+        if (prev.some((x) => x.id === msgId)) return prev;
+        return [...prev, m];
+      });
+      // Wait a tick for the message to render, then scroll within the container.
+      setTimeout(() => scrollChatToBottom("smooth"), 30);
+    };
+
+    s.on("message:new", onNewMessage);
+
+    return () => {
+      // Best-effort leave
+      const rid = joinedRequestIdRef.current;
+      if (rid) s.emit("request:leave", { requestId: rid });
+      s.off("connect", onConnect);
+      s.off("disconnect", onDisconnect);
+      s.off("message:new", onNewMessage);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, code, header?.status]);
+
   React.useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -146,6 +232,13 @@ export default function Page() {
     loadMessages();
   }, [user, header, loadMessages]);
 
+  React.useEffect(() => {
+    if (!chatAllowed(header?.status)) return;
+    // Keep the chat pinned to the bottom without affecting the page scroll.
+    scrollChatToBottom("auto");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages.length]);
+
   const onCopy = async () => {
     try {
       await navigator.clipboard.writeText(code);
@@ -162,11 +255,45 @@ export default function Page() {
     try {
       await api.sendMyRequestMessage(code, msg);
       setDraft("");
-      await loadMessages();
+      // REST endpoint already emits realtime events; also refresh as fallback
+      if (!socket) await loadMessages();
     } catch {
       setMsgError("Não foi possível enviar a mensagem agora.");
     } finally {
       setSending(false);
+    }
+  };
+
+  const canDelete = String(header?.status ?? "").toLowerCase().trim() === "created";
+
+  const onDelete = async () => {
+    if (!user) return;
+    if (!code) return;
+    if (!canDelete) return;
+    if (deleting) return;
+
+    const ok = window.confirm(
+      "Cancelar este pedido?\n\nIsso vai apagar completamente o pedido e não poderá ser desfeito."
+    );
+    if (!ok) return;
+
+    setDeleting(true);
+    setDeleteError(null);
+    try {
+      await api.deleteMyRequest(code);
+      // Redirect back to the list with a friendly success banner.
+      router.replace(`/meus-pedidos?deleted=${encodeURIComponent(code)}`);
+    } catch (e: any) {
+      const err = e?.bodyJson?.error ?? "";
+      if (err === "cannot_delete_status") {
+        setDeleteError("Este pedido já está em andamento e não pode mais ser cancelado.");
+      } else if (err === "not_found") {
+        setDeleteError("Pedido não encontrado.");
+      } else {
+        setDeleteError("Não foi possível cancelar o pedido agora. Tente novamente.");
+      }
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -226,6 +353,7 @@ export default function Page() {
                   >
                     Copiar código
                   </button>
+
                   <div className="mt-3 text-xs text-dracula-text/70">Modelo</div>
                   <div className="mt-1 text-sm font-semibold text-dracula-text">{header.model_name}</div>
                   <div className="mt-3 text-xs text-dracula-text/70">Criado em</div>
@@ -237,6 +365,23 @@ export default function Page() {
                   <div className="mt-1 text-lg font-semibold text-dracula-text">{formatMoneyBRL(header.total_cents)}</div>
                   <div className="mt-3 text-xs text-dracula-text/70">Status</div>
                   <div className="mt-1 text-base font-bold text-dracula-text">{statusPT(header.status)}</div>
+
+                  {canDelete ? (
+                    <div className="mt-4 flex flex-col items-end gap-2">
+                      {deleteError ? <p className="text-xs text-dracula-accent2">{deleteError}</p> : null}
+                      <button
+                        type="button"
+                        onClick={onDelete}
+                        disabled={deleting}
+                        className="rounded-xl bg-white/[0.10] px-4 py-2 text-sm font-semibold text-dracula-accent2 ring-1 ring-white/15 transition hover:bg-white/[0.14] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {deleting ? "Cancelando…" : "Cancelar pedido"}
+                      </button>
+                      <p className="text-[11px] text-dracula-text/55">
+                        Disponível apenas enquanto o pedido estiver aberto.
+                      </p>
+                    </div>
+                  ) : null}
                 </div>
               </div>
             </Card>
@@ -279,7 +424,22 @@ export default function Page() {
                 <>
                   {msgError ? <p className="mt-2 text-sm text-dracula-accent2">{msgError}</p> : null}
 
-                  <div className="mt-3 max-h-[320px] overflow-auto rounded-xl bg-black/15 p-3 ring-1 ring-white/10">
+                  <div
+                    ref={chatScrollRef}
+                    className="mt-3 max-h-[320px] overflow-auto rounded-xl bg-black/15 p-3 ring-1 ring-white/10"
+                  >
+                    <div className="mb-2 flex items-center justify-between">
+                      <span className="text-[11px] text-dracula-text/55">
+                        Tempo real: {rtStatus === "online" ? "online" : rtStatus === "connecting" ? "conectando" : "offline"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={loadMessages}
+                        className="text-[11px] font-semibold text-dracula-accent hover:brightness-95"
+                      >
+                        Atualizar
+                      </button>
+                    </div>
                     {msgLoading ? (
                       <p className="text-sm text-dracula-text/70">Carregando mensagens…</p>
                     ) : messages.length === 0 ? (

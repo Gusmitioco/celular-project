@@ -2,16 +2,20 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { rotas } from "@/lib/rotas";
 import { useAuth } from "@/components/auth/AuthProvider";
 
 export function Header() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const { user } = useAuth();
 
   // A Home tem topbar própria. Para não duplicar, ocultamos nela.
   if (pathname === "/") return null;
+
+  // Áreas internas não usam o header público.
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/store")) return null;
 
   return (
     <header
@@ -56,7 +60,9 @@ export function Header() {
             </Link>
           ) : (
             <Link
-              href={`/login?returnTo=${encodeURIComponent(pathname || "/")}`}
+              href={`/login?returnTo=${encodeURIComponent(
+                `${pathname || "/"}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`
+              )}`}
               className="rounded-xl bg-white/[0.14] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.20] glass-fix transition hover:bg-white/[0.18]"
               aria-label="Login"
             >
