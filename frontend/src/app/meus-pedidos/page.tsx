@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ClientShell } from "@/components/layout/ClientShell";
 import { Card } from "@/components/ui/Card";
 import { BackButton } from "@/components/ui/BackButton";
@@ -42,6 +42,8 @@ function formatMoneyBRL(cents: number) {
 
 export default function Page() {
   const router = useRouter();
+  const search = useSearchParams();
+  const deletedCode = String(search.get("deleted") ?? "").trim();
   const { user, isLoading: authLoading } = useAuth();
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -88,6 +90,16 @@ export default function Page() {
   return (
     <ClientShell title="Meus Pedidos" maxWidthClassName="max-w-5xl">
       <div className="space-y-4">
+        {deletedCode ? (
+          <Card>
+            <p className="text-sm text-dracula-text">
+              Pedido <span className="font-mono font-semibold">{deletedCode}</span> cancelado com sucesso.
+            </p>
+            <p className="mt-2 text-xs text-dracula-text/70">
+              Se precisar, você pode criar um novo pedido a qualquer momento.
+            </p>
+          </Card>
+        ) : null}
         {authLoading || loading ? <p className="text-sm text-dracula-text/70">Carregando…</p> : null}
 
         {!authLoading && !user ? (

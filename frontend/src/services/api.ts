@@ -336,6 +336,15 @@ export const api = {
     return out;
   },
 
+  // Customer: cancel/delete a request completely.
+  // The backend only allows deletion while status='created'.
+  deleteMyRequest: async (code: string) => {
+    const out = await http<{ ok: boolean }>(`/api/requests/me/${encodeURIComponent(code)}`, {
+      method: "DELETE",
+    });
+    return out.ok;
+  },
+
   // Customer chat
   listMyRequestMessages: async (code: string) => {
     const out = await http<{ ok: boolean; rows: any[] }>(
