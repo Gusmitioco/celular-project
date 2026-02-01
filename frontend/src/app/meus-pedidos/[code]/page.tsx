@@ -118,7 +118,7 @@ export default function Page() {
       const rows = await api.listMyRequestMessages(code);
       setMessages(rows as any);
     } catch (e: any) {
-      // Backend can return 403 when chat is locked or blocked.
+      // Backend can return 403 when chat is locked or blocked
       setMsgError(
         "O chat ficará disponível quando o pedido estiver em andamento. Se estiver bloqueado, aguarde atualizações da loja."
       );
