@@ -25,15 +25,18 @@ apiRouter.get("/health", (_req, res) => {
   res.json({ ok: true, service: "techfix-backend" });
 });
 
-apiRouter.get("/db-test", async (_req, res, next) => {
-  try {
-    const { query } = await import("../db/index.ts");
-    const rows = await query<{ now: string }>("select now() as now");
-    res.json({ ok: true, now: rows[0]?.now });
-  } catch (e) {
-    next(e);
-  }
-});
+// Dev-only endpoint (avoid exposing DB introspection in production)
+if (process.env.NODE_ENV !== "production") {
+  apiRouter.get("/db-test", async (_req, res, next) => {
+    try {
+      const { query } = await import("../db/index.ts");
+      const rows = await query<{ now: string }>("select now() as now");
+      res.json({ ok: true, now: rows[0]?.now });
+    } catch (e) {
+      next(e);
+    }
+  });
+}
 
 apiRouter.use("/cities", citiesRouter);
 apiRouter.use("/brands", brandsRouter);

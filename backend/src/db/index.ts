@@ -8,8 +8,20 @@ loadEnv();
 
 const { Pool, types } = pg;
 
-// Parse BIGINT (int8) as number (safe for your IDs)
-types.setTypeParser(20, (val) => Number(val));
+// Parse BIGINT (int8) carefully:
+// - Return number when it's within JS safe integer range
+// - Otherwise return string to avoid silent precision loss
+types.setTypeParser(20, (val) => {
+  try {
+    const n = BigInt(val);
+    const max = BigInt(Number.MAX_SAFE_INTEGER);
+    const min = -max;
+    if (n <= max && n >= min) return Number(n);
+    return val; // keep as string
+  } catch {
+    return val;
+  }
+});
 
 const DATABASE_URL = process.env.DATABASE_URL;
 if (!DATABASE_URL) {

@@ -11,9 +11,15 @@ import { errorHandler } from "./middleware/errorHandler.ts";
 
 export const app = express();
 
+const isProd = process.env.NODE_ENV === "production";
+const configuredOrigin = process.env.CORS_ORIGIN;
+if (isProd && !configuredOrigin) {
+  throw new Error("Missing CORS_ORIGIN in production environment");
+}
+
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN ?? "http://localhost:3000",
+    origin: configuredOrigin ?? "http://localhost:3000",
     credentials: true,
   })
 );

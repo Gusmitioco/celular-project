@@ -22,6 +22,8 @@ export async function setStoreSessionCookie(res: Response, storeUserId: number) 
   const tokenHash = sha256Hex(token);
   const expiresAt = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
 
+  const isProd = process.env.NODE_ENV === "production";
+
   await query(
     `INSERT INTO store_sessions (store_user_id, token_hash, expires_at)
      VALUES ($1, $2, $3)`,
@@ -31,8 +33,10 @@ export async function setStoreSessionCookie(res: Response, storeUserId: number) 
   res.cookie(STORE_COOKIE, token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: false, // set true behind HTTPS in production
+    secure: isProd,
     expires: expiresAt,
+    // also set maxAge for compatibility
+    maxAge: SESSION_DAYS * 24 * 60 * 60 * 1000,
     path: "/",
   });
 }

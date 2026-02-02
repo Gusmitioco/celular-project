@@ -124,6 +124,22 @@ export function initRealtime(server: http.Server) {
   });
 
   io.on("connection", (socket) => {
+    // Simple per-socket rate limiting to avoid DB flood.
+    // (Not a replacement for API/IP limits, but helps protect hot paths.)
+    const hit = (key: string, windowMs: number, max: number) => {
+      const now = Date.now();
+      const store = (((socket.data as any)._rl ??= {}) as Record<
+        string,
+        { count: number; resetAt: number }
+      >);
+      const cur = store[key];
+      if (!cur || now > cur.resetAt) {
+        store[key] = { count: 1, resetAt: now + windowMs };
+        return true;
+      }
+      cur.count += 1;
+      return cur.count <= max;
+    };
     socket.emit("auth:ok", {
       ok: true,
       storeUser: (socket.data as any).storeUser ?? null,
@@ -132,6 +148,9 @@ export function initRealtime(server: http.Server) {
 
     socket.on("request:join", async (payload: any, ack?: (r: any) => void) => {
       try {
+        if (!hit("request:join", 60_000, 120)) {
+          return ack?.({ ok: false, error: "rate_limited" });
+        }
         const storeUser = (socket.data as any).storeUser as StoreUserCtx | null;
         const customer = (socket.data as any).customer as CustomerCtx | null;
 
@@ -178,6 +197,9 @@ export function initRealtime(server: http.Server) {
 
     socket.on("message:send", async (payload: any, ack?: (r: any) => void) => {
       try {
+        if (!hit("message:send", 10_000, 12)) {
+          return ack?.({ ok: false, error: "rate_limited" });
+        }
         const storeUser = (socket.data as any).storeUser as StoreUserCtx | null;
         const customer = (socket.data as any).customer as CustomerCtx | null;
 

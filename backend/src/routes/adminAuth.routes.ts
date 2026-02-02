@@ -22,11 +22,13 @@ adminAuthRouter.post("/login", (req, res) => {
 
   const token = jwt.sign({ sub: "owner", username: ADMIN_USER }, secret, { expiresIn: "7d" });
 
+  const isProd = process.env.NODE_ENV === "production";
+
   // httpOnly cookie so JS can’t read it
   res.cookie("admin_token", token, {
     httpOnly: true,
     sameSite: "lax",
-    secure: false, // set true only behind HTTPS in production
+    secure: isProd,
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });

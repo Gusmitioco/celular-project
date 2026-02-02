@@ -21,7 +21,8 @@ function cookieOptions() {
     secure: isProd,
     path: "/",
     // 30 dias
-    maxAge: 60 * 60 * 24 * 30,
+    // Express expects maxAge in milliseconds
+    maxAge: 60 * 60 * 24 * 30 * 1000,
   };
 }
 
