@@ -17,7 +17,7 @@ export function StepsNav({ current, finalized = false }: { current: 0 | 1 | 2 | 
           <div
             key={label}
             className={clsx(
-              "text-sm font-bold transition",
+              "text-sm font-semibold transition",
               // padrão
               !active && !done && "text-dracula-subtext/60",
               // ativo (roxo, mas um pouco “vivo”)

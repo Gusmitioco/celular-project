@@ -39,16 +39,11 @@ export default function HomePage() {
             garantia nos serviços.
           </p>
 
-          <div className="mt-8 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
-            <CredCard title="Assistências" value="+2 Milhoes" subtitle="em serviços selecionados" />
-            <CredCard title="Avaliação" value="4.9/5" subtitle="média dos clientes" />
-            <CredCard title="Atendimento" value="Rápido" subtitle="agendamento simplificado" />
-          </div>
-
-          <div className="mt-10 flex items-center gap-4">
+          {/* CTA (mobile) - logo abaixo do texto */}
+          <div className="mt-7 flex justify-center sm:hidden">
             <CtaLink
               href={rotas.agendamento.marca()}
-              className="group inline-flex items-center justify-center rounded-2xl px-7 py-4 text-base font-semibold
+              className="no-drag group inline-flex items-center justify-center rounded-2xl px-7 py-4 text-base font-semibold
                          text-dracula-bg shadow-sm transition
                          bg-dracula-accent
                          hover:brightness-95
@@ -57,6 +52,33 @@ export default function HomePage() {
                          shadow-[0_18px_45px_-20px_rgba(80,250,123,0.9)]
                          hover:shadow-[0_22px_55px_-22px_rgba(80,250,123,1)]
                          active:translate-y-[1px]"
+              draggable={false}
+            >
+              Começar agendamento
+              <span className="ml-2 inline-block translate-x-0 transition group-hover:translate-x-0.5">→</span>
+            </CtaLink>
+          </div>
+
+          <div className="mt-8 grid max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
+            <CredCard title="Assistências" value="+2 Milhoes" subtitle="em serviços selecionados" />
+            <CredCard title="Avaliação" value="4.9/5" subtitle="média dos clientes" />
+            <CredCard title="Atendimento" value="Rápido" subtitle="agendamento simplificado" />
+          </div>
+
+          {/* CTA (desktop) */}
+          <div className="mt-10 hidden items-center gap-4 sm:flex">
+            <CtaLink
+              href={rotas.agendamento.marca()}
+              className="no-drag group inline-flex items-center justify-center rounded-2xl px-7 py-4 text-base font-semibold
+                         text-dracula-bg shadow-sm transition
+                         bg-dracula-accent
+                         hover:brightness-95
+                         focus:outline-none focus:ring-2 focus:ring-dracula-accent/60 focus:ring-offset-0
+                         ring-1 ring-black/10
+                         shadow-[0_18px_45px_-20px_rgba(80,250,123,0.9)]
+                         hover:shadow-[0_22px_55px_-22px_rgba(80,250,123,1)]
+                         active:translate-y-[1px]"
+              draggable={false}
             >
               Começar agendamento
               <span className="ml-2 inline-block translate-x-0 transition group-hover:translate-x-0.5">→</span>

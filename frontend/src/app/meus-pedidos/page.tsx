@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ClientShell } from "@/components/layout/ClientShell";
 import { Card } from "@/components/ui/Card";
 import { BackButton } from "@/components/ui/BackButton";
+import HomeButton from "@/components/ui/HomeButton";
 import { Button } from "@/components/ui/Button";
 import { api } from "@/services/api";
 import { useAuth } from "@/components/auth/AuthProvider";
@@ -89,7 +90,11 @@ export default function Page() {
 
   return (
     <ClientShell title="Meus Pedidos" maxWidthClassName="max-w-5xl">
-      <div className="space-y-4">
+      <div className="space-y-6 pt-2">
+        <div className="flex items-center justify-between">
+          <BackButton onClick={() => router.back()} />
+          <HomeButton />
+        </div>
         {deletedCode ? (
           <Card>
             <p className="text-sm text-dracula-text">
@@ -149,7 +154,7 @@ export default function Page() {
                 </p>
               </div>
 
-              <div className="flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 {/* Volta para a página anterior */}
                 <BackButton onClick={() => router.back()} />
 
@@ -168,40 +173,40 @@ export default function Page() {
         {user && !loading && !error && rows.length > 0 ? (
           <div className="grid gap-3">
             {rows.map((r) => (
-              <Card key={r.id}>
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <div className="text-xs font-semibold text-dracula-text/70">Código</div>
-                    <div className="mt-1 font-mono text-lg text-dracula-text">{r.code}</div>
-                    <div className="mt-2 text-xs text-dracula-text/70">{r.model_name}</div>
-                    <div className="mt-1 text-xs text-dracula-text/70">
-                      {r.store_name} • {r.store_address}
+              <Link
+                key={r.id}
+                href={`/meus-pedidos/${encodeURIComponent(r.code)}`}
+                className="no-drag block"
+                draggable={false}
+              >
+                <Card className="cursor-pointer transition-transform transform-gpu hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <div className="text-xs font-semibold text-dracula-text/70">Código</div>
+                      <div className="mt-1 font-mono text-lg text-dracula-text">{r.code}</div>
+                      <div className="mt-2 text-xs text-dracula-text/70">{r.model_name}</div>
+                      <div className="mt-1 text-xs text-dracula-text/70">
+                        {r.store_name} • {r.store_address}
+                      </div>
+                    </div>
+
+                    <div className="text-right">
+                      <div className="text-xs font-semibold text-dracula-text/70">Total</div>
+                      <div className="mt-1 text-base font-semibold text-dracula-text">
+                        {formatMoneyBRL(r.total_cents)}
+                      </div>
+                      <div className="mt-2 text-xs text-dracula-text/70">
+                        Status:{" "}
+                        <span className="text-base font-bold text-dracula-text">{statusPT(r.status)}</span>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <div className="text-xs font-semibold text-dracula-text/70">Total</div>
-                    <div className="mt-1 text-base font-semibold text-dracula-text">
-                      {formatMoneyBRL(r.total_cents)}
-                    </div>
-                    <div className="mt-2 text-xs text-dracula-text/70">
-                      Status:{" "}
-                      <span className="text-base font-bold text-dracula-text">
-                        {statusPT(r.status)}
-                      </span>
-                    </div>
+                  <div className="mt-4">
+                    <span className="text-sm font-semibold text-dracula-accent hover:brightness-95">Ver detalhes →</span>
                   </div>
-                </div>
-
-                <div className="mt-4">
-                  <Link
-                    href={`/meus-pedidos/${encodeURIComponent(r.code)}`}
-                    className="text-sm font-semibold text-dracula-accent hover:brightness-95"
-                  >
-                    Ver detalhes →
-                  </Link>
-                </div>
-              </Card>
+                </Card>
+              </Link>
             ))}
           </div>
         ) : null}

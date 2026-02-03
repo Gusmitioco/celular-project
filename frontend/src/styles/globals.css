@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -6,8 +7,8 @@
   --dr-bg: #282a36;
   --dr-card: #44475a;
   --dr-text: #f8f8f2;
-  --dr-subtext: #bd93f9;
-  --dr-accent: #50fa7b;
+  --dr-subtext: #9e66ec;
+  --dr-accent: #44f16f;
   --dr-accent2: #ff79c6;
 }
 
@@ -317,4 +318,4 @@ a {
 
 
 /* Font helper for StepsNav */
-.font-steps{font-family: 'LINE Seed JP', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";}
+.font-steps{font-family: 'Montserrat', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji"; font-weight:600;}

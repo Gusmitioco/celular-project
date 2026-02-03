@@ -26,7 +26,7 @@ export function SiteBackground({ children }: { children: React.ReactNode }) {
           Usamos `filter: blur()` em uma camada dedicada (sem backdrop-filter),
           então não dispara o bug de hairline do Chrome ao perder foco.
         */}
-        <div className="absolute inset-0 transform-gpu scale-[1.04] filter blur-[10px] saturate-125 brightness-110">
+        <div className="absolute inset-0 transform-gpu scale-[1.04] filter blur-[16px] saturate-125 brightness-110">
           <div className="absolute inset-0">
             {isHome ? (
               <Image
