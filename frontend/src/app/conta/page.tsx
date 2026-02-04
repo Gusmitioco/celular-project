@@ -1,218 +1,183 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React from "react";
 import Link from "next/link";
 
 import { ClientShell } from "@/components/layout/ClientShell";
 import { Card } from "@/components/ui/Card";
 import HomeButton from "@/components/ui/HomeButton";
-import Button from "@/components/ui/Button";
+import { Button } from "@/components/ui/Button";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/services/api";
 
-type Me = Awaited<ReturnType<typeof api.auth.me>>;
+type Me = Awaited<ReturnType<typeof api.getMe>>;
 
 export default function Page() {
-  const [me, setMe] = useState<Me | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const { user, isLoading, refresh, logout } = useAuth();
 
-  const [editing, setEditing] = useState(false);
-  const [name, setName] = useState("");
-  const [phone, setPhone] = useState("");
+  // Mantém um perfil “completo” (phone etc.) quando o /me retorna mais campos
+  const [me, setMe] = React.useState<Me | null>(null);
+  const [loadingMe, setLoadingMe] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
-  useEffect(() => {
+  const isLoadingAll = isLoading || loadingMe;
+
+  React.useEffect(() => {
     let mounted = true;
+
+    // Se não existe sessão, não tenta carregar detalhes
+    if (!user) {
+      setMe(null);
+      return;
+    }
+
+    setLoadingMe(true);
+    setError(null);
+
     (async () => {
       try {
-        const data = await api.auth.me();
+        // Garante que o estado global esteja atualizado
+        await refresh();
+
+        const data = await api.getMe();
         if (!mounted) return;
-        setMe(data);
-      } catch (e: any) {
+        setMe(data ?? null);
+      } catch {
         if (!mounted) return;
+        // Se falhar, ainda podemos renderizar pelo menos o que o AuthProvider tem
         setMe(null);
-        // sem login -> tudo bem
       } finally {
         if (!mounted) return;
-        setLoading(false);
+        setLoadingMe(false);
       }
     })();
+
     return () => {
       mounted = false;
     };
-  }, []);
-
-  // mantém valores do form alinhados com o usuário carregado
-  useEffect(() => {
-    if (!me) return;
-    // tentativa de mapear campos comuns sem quebrar caso não existam
-    const anyMe: any = me as any;
-    setName(String(anyMe?.name ?? anyMe?.nome ?? ""));
-    setPhone(String(anyMe?.phone ?? anyMe?.telefone ?? anyMe?.whatsapp ?? ""));
-  }, [me]);
-
-  const displayName = useMemo(() => {
-    const anyMe: any = me as any;
-    return String(anyMe?.name ?? anyMe?.nome ?? anyMe?.email ?? "Usuário");
-  }, [me]);
+  }, [user, refresh]);
 
   async function onLogout() {
+    setError(null);
     try {
-      await api.auth.logout();
+      await logout();
       window.location.href = "/";
     } catch (e: any) {
       setError(e?.message ?? "Falha ao sair");
     }
   }
 
-  // por enquanto é UI (endpoint de update pode entrar depois)
-  async function onSaveProfile() {
-    setError(null);
-    // Ainda não há endpoint estável de update no api.ts.
-    // Quando definirmos, é só implementar aqui.
-    setError(
-      "Ainda não dá pra salvar alterações por aqui. Em breve vamos habilitar a edição de conta."
-    );
-  }
+  const anyMe: any = (me ?? user) as any;
+
+  const name = String(anyMe?.name ?? anyMe?.nome ?? "");
+  const email = String(anyMe?.email ?? "");
+  const phone = String(anyMe?.phone ?? anyMe?.telefone ?? anyMe?.whatsapp ?? "");
 
   return (
     <ClientShell title="Conta" maxWidthClassName="max-w-4xl">
-      <div className="flex items-center justify-between">
+      {/* Top bar */}
+      <div className="flex items-center justify-between gap-3">
         <HomeButton />
         <div className="text-right">
-          <div className="text-sm text-dracula-text/60">Sua conta</div>
+          <p className="text-sm text-white/70">Sua conta</p>
         </div>
       </div>
 
-      <div className="mt-6">
-        <Card>
-          <div className="flex min-h-[260px] flex-col gap-4">
-            {loading ? (
-              <div className="text-dracula-text/70">Carregando…</div>
-            ) : me ? (
-              <>
-                <div>
-                  <div className="text-xl font-semibold">{displayName}</div>
-                  <div className="mt-1 text-sm text-dracula-text/60">
-                    Aqui você vai poder ajustar dados da sua conta e acompanhar seus pedidos.
-                  </div>
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-2">
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
-                    <div className="text-xs text-dracula-text/60">Nome</div>
-                    <div className="mt-1 text-sm text-dracula-text/90">
-                      {name || "—"}
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.05] p-4">
-                    <div className="text-xs text-dracula-text/60">Telefone / WhatsApp</div>
-                    <div className="mt-1 text-sm text-dracula-text/90">
-                      {phone || "—"}
-                    </div>
-                  </div>
-                </div>
-
-                {editing ? (
-                  <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-4">
-                    <div className="text-sm font-semibold">Editar conta</div>
-                    <div className="mt-3 grid gap-3 md:grid-cols-2">
-                      <label className="space-y-1">
-                        <div className="text-xs text-dracula-text/60">Nome</div>
-                        <input
-                          value={name}
-                          onChange={(e) => setName(e.target.value)}
-                          className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-dracula-text placeholder:text-dracula-text/40 outline-none transition focus:border-white/20"
-                          placeholder="Seu nome"
-                        />
-                      </label>
-                      <label className="space-y-1">
-                        <div className="text-xs text-dracula-text/60">Telefone / WhatsApp</div>
-                        <input
-                          value={phone}
-                          onChange={(e) => setPhone(e.target.value)}
-                          className="w-full rounded-xl border border-white/10 bg-white/[0.06] px-4 py-3 text-sm text-dracula-text placeholder:text-dracula-text/40 outline-none transition focus:border-white/20"
-                          placeholder="(00) 00000-0000"
-                        />
-                      </label>
-                    </div>
-
-                    <div className="mt-4 flex flex-wrap items-center gap-3">
-                      <Button
-                        onClick={onSaveProfile}
-                        className="rounded-xl bg-white/10 px-5 py-3 text-sm font-semibold text-white/90 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-white/90 hover:text-dracula-bg"
-                      >
-                        Salvar
-                      </Button>
-                      <button
-                        onClick={() => setEditing(false)}
-                        className="rounded-xl border border-white/10 bg-white/[0.04] px-5 py-3 text-sm font-semibold text-white/80 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/20 hover:bg-white/[0.06]"
-                      >
-                        Cancelar
-                      </button>
-                      <div className="text-xs text-dracula-text/60">
-                        Alteração de senha entra numa próxima etapa.
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-dracula-text/60">
-                    Dica: depois do login, seus pedidos ficam salvos e você consegue acompanhar o status.
-                  </div>
-                )}
-
-                {error && (
-                  <div className="rounded-xl border border-pink-400/30 bg-pink-400/10 p-3 text-sm text-pink-200">
-                    {error}
-                  </div>
-                )}
-
-                <div className="mt-auto flex w-full items-center justify-between gap-3">
-                  <button
-                    onClick={() => setEditing((v) => !v)}
-                    className="h-12 w-44 select-none rounded-full border border-white/15 bg-white/[0.06] px-4 text-[15px] font-semibold text-white/90 backdrop-blur-sm transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-white/90 hover:text-dracula-bg"
-                  >
-                    {editing ? "Fechar edição" : "Editar conta"}
-                  </button>
-
-                  <button
-                    onClick={onLogout}
-                    className="h-12 w-44 select-none rounded-full border border-red-400/25 bg-red-500/15 px-4 text-[15px] font-semibold text-red-100 backdrop-blur-sm transition-all duration-500 ease-out hover:-translate-y-0.5 hover:border-red-300/40 hover:bg-red-500/25 hover:shadow-[0_0_24px_rgba(239,68,68,0.18)]"
-                  >
-                    Sair
-                  </button>
-                </div>
-              </>
-            ) : (
-              <>
-                <div>
-                  <div className="text-xl font-semibold">Você não está logado</div>
-                  <div className="mt-1 text-sm text-dracula-text/60">
-                    Faça login para salvar pedidos, acompanhar o status e usar o chat em tempo real.
-                  </div>
-                </div>
-
-                <div className="mt-auto flex w-full items-center justify-between gap-3">
-                  <HomeButton />
-                  <div className="flex gap-3">
-                    <Link
-                      href="/login"
-                      className="h-12 w-44 select-none rounded-full bg-white/90 px-4 text-center text-[15px] font-semibold leading-[48px] text-dracula-bg transition-all duration-300 ease-out hover:-translate-y-0.5 hover:bg-white"
-                    >
-                      Login
-                    </Link>
-                    <Link
-                      href="/cadastro"
-                      className="h-12 w-44 select-none rounded-full border border-white/15 bg-white/[0.06] px-4 text-center text-[15px] font-semibold leading-[48px] text-white/90 transition-all duration-300 ease-out hover:-translate-y-0.5 hover:border-white/25 hover:bg-white/[0.10]"
-                    >
-                      Criar conta
-                    </Link>
-                  </div>
-                </div>
-              </>
-            )}
+      <Card className="mt-5 p-6">
+        {isLoadingAll ? (
+          <div className="space-y-3">
+            <div className="h-5 w-40 rounded bg-white/10" />
+            <div className="h-4 w-80 rounded bg-white/10" />
+            <div className="h-4 w-72 rounded bg-white/10" />
           </div>
-        </Card>
-      </div>
+        ) : !user ? (
+          <div className="space-y-4">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Você não está logado</h2>
+              <p className="mt-1 text-sm text-white/70">
+                Faça login para salvar pedidos, acompanhar o status e usar o chat em tempo real.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              <Link href="/login">
+                <Button className="min-w-[140px]" variant="primary">
+                  Login
+                </Button>
+              </Link>
+              <Link href="/cadastro">
+                <Button className="min-w-[140px]" variant="secondary">
+                  Criar conta
+                </Button>
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-5">
+            <div>
+              <h2 className="text-xl font-semibold text-white">Seus dados</h2>
+              <p className="mt-1 text-sm text-white/70">
+                Aqui ficam as informações da sua conta. (Edição de senha fica para mais pra frente.)
+              </p>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10">
+                <p className="text-xs text-white/60">Nome</p>
+                <p className="mt-1 text-base font-medium text-white">{name || "—"}</p>
+              </div>
+
+              <div className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10">
+                <p className="text-xs text-white/60">E-mail</p>
+                <p className="mt-1 text-base font-medium text-white break-all">{email || "—"}</p>
+              </div>
+
+              <div className="rounded-xl bg-white/5 p-4 ring-1 ring-white/10 sm:col-span-2">
+                <p className="text-xs text-white/60">Telefone / WhatsApp</p>
+                <p className="mt-1 text-base font-medium text-white">{phone || "—"}</p>
+              </div>
+            </div>
+
+            {error ? (
+              <p className="rounded-lg bg-red-500/10 px-3 py-2 text-sm text-red-100 ring-1 ring-red-400/20">
+                {error}
+              </p>
+            ) : null}
+
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <Link href="/">
+                <Button className="min-w-[140px]" variant="secondary">
+                  Início
+                </Button>
+              </Link>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="min-w-[160px] opacity-70 hover:opacity-100 transition-opacity"
+                  onClick={() =>
+                    setError(
+                      "Edição de conta (nome/telefone) entra na próxima etapa — falta endpoint estável no backend."
+                    )
+                  }
+                >
+                  Editar conta
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="danger"
+                  className="min-w-[140px] transition-all duration-300 hover:-translate-y-[1px]"
+                  onClick={onLogout}
+                >
+                  Sair
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+      </Card>
     </ClientShell>
   );
 }

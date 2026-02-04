@@ -6,7 +6,35 @@
  * - remove trailing slashes
  * - remove a trailing "/api" (with optional slashes)
  */
-const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" ? `http://${window.location.hostname}:3001` : "http://localhost:3001");
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+// In dev it's common to start Next with -H 0.0.0.0, and some people copy that URL.
+// Browsers/phones can't reliably call 0.0.0.0 as a host, so we auto-fix it.
+function fixDevHost(input: string) {
+  try {
+    const url = new URL(input);
+    const isZero = url.hostname === "0.0.0.0";
+
+    // If no explicit env was set, and we're on a non-localhost hostname (e.g. phone/LAN),
+    // use the current page hostname for API calls.
+    const canUseWindow = typeof window !== "undefined" && !!window.location?.hostname;
+    const pageHost = canUseWindow ? window.location.hostname : "";
+
+    if (isZero && canUseWindow) {
+      url.hostname = pageHost || "localhost";
+      return url.toString();
+    }
+
+    // If env is not set and we are accessed via LAN IP, keep API on same host.
+    if (!process.env.NEXT_PUBLIC_API_URL && canUseWindow && pageHost && pageHost !== "localhost" && pageHost !== "127.0.0.1") {
+      url.hostname = pageHost;
+      return url.toString();
+    }
+  } catch {
+    // ignore
+  }
+  return input;
+}
 
 function normalizeBaseUrl(input: string) {
   const noTrail = input.replace(/\/+$/, "");
@@ -16,7 +44,7 @@ function normalizeBaseUrl(input: string) {
 
 // Exported so other modules (e.g. admin/store login screens) can reliably build URLs
 // regardless of whether NEXT_PUBLIC_API_URL includes a trailing "/api".
-export const apiBaseUrl = normalizeBaseUrl(rawBaseUrl);
+export const apiBaseUrl = normalizeBaseUrl(fixDevHost(rawBaseUrl));
 
 async function http<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${apiBaseUrl}${path}`, {

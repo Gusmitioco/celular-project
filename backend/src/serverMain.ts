@@ -1,6 +1,6 @@
 import express from "express";
 import http from "http";
-import cors from "cors";
+import cors, { type CorsOptions } from "cors";
 import cookieParser from "cookie-parser";
 import helmet from "helmet";
 import rateLimit from "express-rate-limit";
@@ -14,81 +14,115 @@ import { query } from "./db.js";
 const app = express();
 
 const isProd = process.env.NODE_ENV === "production";
-const configuredOrigin = process.env.CORS_ORIGIN;
-if (isProd && !configuredOrigin) {
-  // Fail closed: avoids accidentally shipping with permissive/localhost CORS in production.
+const isDev = !isProd;
+
+// --- CORS (must run BEFORE any limiter so preflight gets headers) ---
+// In production we fail-closed unless CORS_ORIGIN is provided.
+// In development we allow localhost/127.0.0.1/0.0.0.0 and private LAN IPs by default.
+const configuredOriginRaw = (process.env.CORS_ORIGIN ?? "").trim();
+if (isProd && !configuredOriginRaw) {
   throw new Error("Missing CORS_ORIGIN in production environment");
 }
-const corsOrigin = configuredOrigin ?? "http://localhost:3000";
+
+const configuredOrigins = configuredOriginRaw
+  ? configuredOriginRaw.split(",").map((s) => s.trim()).filter(Boolean)
+  : [];
 
 function isAllowedDevOrigin(origin: string) {
-  // Allow localhost and private LAN IPs (for testing on phone in the same Wi‑Fi)
-  // Examples:
-  // - http://localhost:3000
-  // - http://127.0.0.1:3000
-  // - http://192.168.0.10:3000
-  // - http://10.0.0.5:3000
-  // - http://172.16.0.8:3000
-  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)
-    || /^http:\/\/(10\.(?:\d{1,3}\.){2}\d{1,3})(:\d+)?$/i.test(origin)
-    || /^http:\/\/(192\.168\.(?:\d{1,3}\.)\d{1,3})(:\d+)?$/i.test(origin)
-    || /^http:\/\/(172\.(?:1[6-9]|2\d|3[0-1])\.(?:\d{1,3}\.)\d{1,3})(:\d+)?$/i.test(origin);
+  try {
+    const u = new URL(origin);
+    const host = u.hostname;
+
+    // localhost-ish
+    if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") return true;
+
+    // Private LAN ranges
+    if (/^192\.168\./.test(host)) return true;
+    if (/^10\./.test(host)) return true;
+
+    // 172.16.0.0 – 172.31.255.255
+    const m = host.match(/^172\.(\d+)\./);
+    if (m) {
+      const second = Number(m[1]);
+      if (second >= 16 && second <= 31) return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
 }
 
+const corsOptions: CorsOptions = {
+  credentials: true,
+  origin(origin, callback) {
+    // Some tools / same-origin requests may not send Origin.
+    if (!origin) return callback(null, true);
 
-app.set("trust proxy", 1); // important if behind proxy (railway/render/vercel). ok locally too.
+    // Prod: only allow explicitly configured origins
+    if (isProd) {
+      return callback(null, configuredOrigins.includes(origin));
+    }
+
+    // Dev: allow configuredOrigins if provided, otherwise allow known dev origins
+    if (configuredOrigins.length > 0) {
+      return callback(null, configuredOrigins.includes(origin));
+    }
+
+    return callback(null, isAllowedDevOrigin(origin));
+  },
+};
+
+app.set("trust proxy", 1);
 
 app.use(helmet());
-
-// limit JSON size (prevents huge payload spam)
 app.use(express.json({ limit: "32kb" }));
+app.use(cookieParser());
 
+// CORS + preflight
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+// --- Rate limiting / slowdown (AFTER CORS) ---
 const apiLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 min
-  max: 120, // 120 requests/min per IP
+  windowMs: 60 * 1000,
+  max: isDev ? 600 : 120,
   standardHeaders: true,
   legacyHeaders: false,
   message: { ok: false, error: "rate_limited" },
-});
+  skip: (req) => {
+    // Never limit preflight
+    if (req.method === "OPTIONS") return true;
 
-app.use("/api", apiLimiter);
+    // In dev, do not rate-limit auth endpoints to avoid dev lockouts.
+    if (isDev && req.path.startsWith("/api/auth")) return true;
+
+    return false;
+  },
+});
 
 const apiSlowdown = slowDown({
   windowMs: 60 * 1000,
-  delayAfter: 60, // after 60 req/min start slowing down
-  delayMs: () => 250, // +250ms per request over the limit
+  delayAfter: isDev ? 300 : 60,
+  delayMs: () => 250,
+  skip: (req) => {
+    if (req.method === "OPTIONS") return true;
+    if (isDev && req.path.startsWith("/api/auth")) return true;
+    return false;
+  },
 });
 
+app.use("/api", apiLimiter);
 app.use("/api", apiSlowdown);
 
-app.use(cookieParser());
-
-app.use(
-  cors({
-    origin: (origin, cb) => {
-      // Some tools / iOS Safari can send no Origin header for same-origin navigations.
-      if (!origin) return cb(null, true);
-
-      // If user explicitly configured CORS_ORIGIN, respect it strictly.
-      if (configuredOrigin) return cb(null, origin === configuredOrigin);
-
-      // In dev, allow localhost and LAN IPs so phone on same Wi‑Fi can access.
-      if (!isProd && isAllowedDevOrigin(origin)) return cb(null, true);
-
-      return cb(new Error("Not allowed by CORS"));
-    },
-    credentials: true,
-  })
-);
 // Local webhook receiver for testing
-// - Enabled by default in dev
-// - Disabled in production unless explicitly enabled
-const enableWebhookTest = !isProd || ["1", "true", "yes"].includes(String(process.env.ENABLE_WEBHOOK_TEST ?? "").toLowerCase());
+const enableWebhookTest =
+  !isProd || ["1", "true", "yes"].includes(String(process.env.ENABLE_WEBHOOK_TEST ?? "").toLowerCase());
 if (enableWebhookTest) {
   app.use("/webhook", webhookTestRouter);
 }
 
-// Your API routes
+// API routes
 app.use("/api", apiRouter);
 
 app.use((err: any, _req: any, res: any, _next: any) => {
@@ -97,18 +131,19 @@ app.use((err: any, _req: any, res: any, _next: any) => {
 });
 
 const port = Number(process.env.PORT ?? 3001);
-
-// HTTP server (needed for Socket.IO)
 const server = http.createServer(app);
 
-// Real-time chat
 initRealtime(server);
 
-// Best-effort: keep session tables from growing forever.
 async function cleanupExpiredSessions() {
-  await query("DELETE FROM customer_sessions WHERE expires_at < now()");
-  await query("DELETE FROM store_sessions WHERE expires_at < now()");
+  // Best-effort cleanup (ignore if tables don't exist)
+  try {
+    await query("DELETE FROM customer_sessions WHERE expires_at < now()");
+  } catch {}
+  try {
+    await query("DELETE FROM store_sessions WHERE expires_at < now()");
+  } catch {}
 }
 cleanupExpiredSessions().catch((e) => console.error("session cleanup failed", e));
 
-server.listen(port, "0.0.0.0", () => console.log(`Backend running on http://0.0.0.0:${port}`));
+server.listen(port, () => console.log(`Backend running on http://localhost:${port}`));
