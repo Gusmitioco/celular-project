@@ -1,7 +1,7 @@
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import type { Request, Response } from "express";
-import { query } from "../db";
+import { query } from "../db.js";
 
 const COOKIE_NAME = "customer_session";
 

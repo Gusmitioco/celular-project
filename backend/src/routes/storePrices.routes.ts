@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireStoreUser } from "../auth/storeAuth";
-import { pool, query } from "../db";
+import { pool, query } from "../db.js";
 
 export const storePricesRouter = Router();
 

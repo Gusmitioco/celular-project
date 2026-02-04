@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAdmin } from "../middleware/adminAuth";
-import { pool, query } from "../db";
+import { pool, query } from "../db.js";
 
 export const adminPricesRouter = Router();
 

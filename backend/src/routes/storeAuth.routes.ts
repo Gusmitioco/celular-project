@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { query } from "../db";
+import { query } from "../db.js";
 import { clearStoreSession, requireStoreUser, setStoreSessionCookie, verifyPassword } from "../auth/storeAuth";
 import { storeAuthLimiter, storeAuthSlowdown } from "../middleware/antiSpam";
 

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import crypto from "crypto";
-import { pool, query } from "../db";
+import { pool, query } from "../db.js";
 import { requireCustomer } from "../auth/customerAuth";
 import { chatLimiter, createRequestLimiter, heavyReadLimiter } from "../middleware/antiSpam";
 import { emitMessage, type RealtimeMessage } from "../realtime/io";

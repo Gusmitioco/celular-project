@@ -3,8 +3,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
-import ClientShell from "@/components/layout/ClientShell";
-import { Card, CardContent } from "@/components/ui/Card";
+import { ClientShell } from "@/components/layout/ClientShell";
+import { Card } from "@/components/ui/Card";
 import HomeButton from "@/components/ui/HomeButton";
 import Button from "@/components/ui/Button";
 import { api } from "@/services/api";
@@ -85,7 +85,7 @@ export default function Page() {
 
       <div className="mt-6">
         <Card>
-          <CardContent className="flex min-h-[260px] flex-col gap-4">
+          <div className="flex min-h-[260px] flex-col gap-4">
             {loading ? (
               <div className="text-dracula-text/70">Carregando…</div>
             ) : me ? (
@@ -210,7 +210,7 @@ export default function Page() {
                 </div>
               </>
             )}
-          </CardContent>
+          </div>
         </Card>
       </div>
     </ClientShell>

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireAdmin } from "../middleware/adminAuth";
-import { query } from "../db";
+import { query } from "../db.js";
 
 export const adminSecurityRouter = Router();
 

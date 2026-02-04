@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { query } from "../db/index.ts";
+import { query } from "../db.js";
 import { slugify } from "../utils/slugify.ts";
 import { heavyReadLimiter } from "../middleware/antiSpam";
 

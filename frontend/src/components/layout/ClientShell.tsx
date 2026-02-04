@@ -6,10 +6,11 @@ type Props = {
   header?: React.ReactNode; // título/subtítulo do step
   steps?: React.ReactNode; // StepsNav
   footer?: React.ReactNode; // botões (Voltar/Confirmar)
+  footerContainerClassName?: string; // classe do container do footer
   maxWidthClassName?: string; // ex: "max-w-5xl"
 };
 
-export function ClientShell({ title, header, steps, children, footer, maxWidthClassName = "max-w-5xl" }: Props) {
+export function ClientShell({ title, header, steps, children, footer, footerContainerClassName, maxWidthClassName = "max-w-5xl" }: Props) {
   const resolvedHeader =
     header ??
     (title ? (
@@ -60,7 +61,7 @@ export function ClientShell({ title, header, steps, children, footer, maxWidthCl
 
         {/* barra de ações fixa no final do card */}
         {footer ? (
-          <div className="px-4 py-5 sm:px-6 sm:py-6 lg:px-10 ring-1 ring-white/[0.14] ring-inset bg-gradient-to-r from-white/[0.06] via-white/[0.03] to-white/[0.06] overflow-visible">
+          <div className={footerContainerClassName ?? "px-4 py-5 sm:px-6 sm:py-6 lg:px-10 ring-1 ring-white/[0.14] ring-inset bg-gradient-to-r from-white/[0.06] via-white/[0.03] to-white/[0.06] overflow-visible"}>
             {footer}
           </div>
         ) : null}

@@ -6,10 +6,10 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import slowDown from "express-slow-down";
 
-import { apiRouter } from "./routes/index.ts";
-import { webhookTestRouter } from "./routes/webhookTest.routes";
-import { initRealtime } from "./realtime/io";
-import { query } from "./db";
+import { apiRouter } from "./routes/index.js";
+import { webhookTestRouter } from "./routes/webhookTest.routes.js";
+import { initRealtime } from "./realtime/io.js";
+import { query } from "./db.js";
 
 const app = express();
 
@@ -20,6 +20,21 @@ if (isProd && !configuredOrigin) {
   throw new Error("Missing CORS_ORIGIN in production environment");
 }
 const corsOrigin = configuredOrigin ?? "http://localhost:3000";
+
+function isAllowedDevOrigin(origin: string) {
+  // Allow localhost and private LAN IPs (for testing on phone in the same Wi‑Fi)
+  // Examples:
+  // - http://localhost:3000
+  // - http://127.0.0.1:3000
+  // - http://192.168.0.10:3000
+  // - http://10.0.0.5:3000
+  // - http://172.16.0.8:3000
+  return /^http:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)
+    || /^http:\/\/(10\.(?:\d{1,3}\.){2}\d{1,3})(:\d+)?$/i.test(origin)
+    || /^http:\/\/(192\.168\.(?:\d{1,3}\.)\d{1,3})(:\d+)?$/i.test(origin)
+    || /^http:\/\/(172\.(?:1[6-9]|2\d|3[0-1])\.(?:\d{1,3}\.)\d{1,3})(:\d+)?$/i.test(origin);
+}
+
 
 app.set("trust proxy", 1); // important if behind proxy (railway/render/vercel). ok locally too.
 
@@ -50,11 +65,21 @@ app.use(cookieParser());
 
 app.use(
   cors({
-    origin: corsOrigin,
+    origin: (origin, cb) => {
+      // Some tools / iOS Safari can send no Origin header for same-origin navigations.
+      if (!origin) return cb(null, true);
+
+      // If user explicitly configured CORS_ORIGIN, respect it strictly.
+      if (configuredOrigin) return cb(null, origin === configuredOrigin);
+
+      // In dev, allow localhost and LAN IPs so phone on same Wi‑Fi can access.
+      if (!isProd && isAllowedDevOrigin(origin)) return cb(null, true);
+
+      return cb(new Error("Not allowed by CORS"));
+    },
     credentials: true,
   })
 );
-
 // Local webhook receiver for testing
 // - Enabled by default in dev
 // - Disabled in production unless explicitly enabled
@@ -86,4 +111,4 @@ async function cleanupExpiredSessions() {
 }
 cleanupExpiredSessions().catch((e) => console.error("session cleanup failed", e));
 
-server.listen(port, () => console.log(`Backend running on http://localhost:${port}`));
+server.listen(port, "0.0.0.0", () => console.log(`Backend running on http://0.0.0.0:${port}`));

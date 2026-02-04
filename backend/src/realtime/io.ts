@@ -1,7 +1,7 @@
 import { Server } from "socket.io";
 import type http from "http";
 import crypto from "crypto";
-import { query } from "../db";
+import { query } from "../db.js";
 
 // Singleton holder so routes can emit without import cycles.
 let _io: Server | null = null;

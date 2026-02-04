@@ -30,7 +30,8 @@ export function Button({ variant = "primary", className, children, ...props }: P
       // Damos um pouco mais de espaço pro laranja na esquerda (stops) pra ficar mais "marcante".
       "bg-[linear-gradient(135deg,#f97316_0%,#f97316_22%,#a855f7_62%,#7c3aed_100%)] text-white " +
       "shadow-[0_18px_55px_-25px_rgba(249,115,22,0.75)] hover:brightness-110 hover:shadow-[0_26px_75px_-28px_rgba(124,58,237,0.85)] " +
-      "active:translate-y-[1px]",
+      // "Luz" no clique: glow na mesma família de cores do botão.
+      "active:translate-y-[1px] active:brightness-105 active:shadow-[0_0_0_6px_rgba(249,115,22,0.18),0_0_28px_rgba(124,58,237,0.35),0_26px_75px_-28px_rgba(124,58,237,0.85)]",
   };
 
   return (

@@ -6,7 +6,7 @@
  * - remove trailing slashes
  * - remove a trailing "/api" (with optional slashes)
  */
-const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || (typeof window !== "undefined" ? `http://${window.location.hostname}:3001` : "http://localhost:3001");
 
 function normalizeBaseUrl(input: string) {
   const noTrail = input.replace(/\/+$/, "");

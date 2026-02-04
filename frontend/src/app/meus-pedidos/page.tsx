@@ -89,12 +89,16 @@ export default function Page() {
   const cadastroHref = `/cadastro?returnTo=${encodeURIComponent("/meus-pedidos")}`;
 
   return (
-    <ClientShell title="Meus Pedidos" maxWidthClassName="max-w-5xl">
+    <ClientShell title="Meus Pedidos" maxWidthClassName="max-w-5xl"
+footer={
+  <div className="flex items-center justify-between gap-3">
+    <BackButton onClick={() => router.back()} />
+    <HomeButton className="shrink-0" />
+  </div>
+}
+footerContainerClassName="px-4 py-6 sm:px-6 sm:py-7 lg:px-10 overflow-visible"
+>
       <div className="space-y-6 pt-2">
-        <div className="flex items-center justify-between">
-          <BackButton onClick={() => router.back()} />
-          <HomeButton />
-        </div>
         {deletedCode ? (
           <Card>
             <p className="text-sm text-dracula-text">
@@ -154,18 +158,13 @@ export default function Page() {
                 </p>
               </div>
 
-              <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                {/* Volta para a página anterior */}
-                <BackButton onClick={() => router.back()} />
-
-                {/* CTA para iniciar um novo pedido (laranja no topo esquerdo → roxo) */}
-                <Button
-                  variant="confirm"
-                  onClick={() => router.push(rotas.agendamento.marca())}
-                >
-                  Fazer um pedido
-                </Button>
-              </div>
+              <Button
+                variant="confirm"
+                className="shadow-[0_18px_55px_-34px_rgba(255,121,198,0.55)] hover:shadow-[0_24px_66px_-34px_rgba(255,184,108,0.75)] hover:-translate-y-[1px] active:translate-y-[0px]"
+                onClick={() => router.push(rotas.agendamento.marca())}
+              >
+                Fazer um pedido
+              </Button>
             </div>
           </Card>
         ) : null}

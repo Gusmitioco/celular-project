@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { requireStoreUser } from "../auth/storeAuth";
-import { query } from "../db";
+import { query } from "../db.js";
 import { storeHeavyReadLimiter } from "../middleware/antiSpam";
 
 export const storeInboxRouter = Router();

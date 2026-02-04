@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import type { Request, Response, NextFunction } from "express";
-import { query } from "../db";
+import { query } from "../db.js";
 
 // Reuse the same password hashing helpers you already use for customers.
 // If your project has them in a different file, change this import path.

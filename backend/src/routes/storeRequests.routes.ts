@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { query } from "../db";
+import { query } from "../db.js";
 import { requireStoreUser } from "../auth/storeAuth";
 import { storeChatLimiter, storeHeavyReadLimiter } from "../middleware/antiSpam";
 import { emitMessage, type RealtimeMessage } from "../realtime/io";

@@ -44,16 +44,19 @@ export function Header() {
         </Link>
 
         <div className="flex items-center gap-3">
-          <Link href="/meus-pedidos" draggable={false}
+          <Link
+            href="/meus-pedidos"
+            draggable={false}
             className="no-drag rounded-xl bg-white/[0.14] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.20]  glass-fix transition hover:bg-white/[0.18] transform-gpu hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.28)] transition-transform"
           >
             Meus Pedidos
           </Link>
+
           {user ? (
             <Link
               href="/conta"
               draggable={false}
-              className="no-drag select-none inline-flex items-center text-sm font-semibold text-dracula-text/90 transition-all duration-200 transform-gpu hover:text-dracula-accent hover:scale-110"
+              className="no-drag select-none inline-flex items-center text-sm font-semibold text-dracula-text/90 transition-all duration-200 transform-gpu hover:text-dracula-accent hover:-translate-y-0.5 hover:drop-shadow-[0_8px_18px_rgba(0,0,0,0.35)]"
               title={user.email ?? ""}
             >
               {user.name?.trim() ? user.name : "Minha conta"}
@@ -64,7 +67,7 @@ export function Header() {
                 `${pathname || "/"}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`
               )}`}
               draggable={false}
-              className="rounded-xl bg-white/[0.14] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.20] glass-fix transition hover:bg-white/[0.18]"
+              className="no-drag rounded-xl bg-white/[0.14] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.20] glass-fix transition hover:bg-white/[0.18] transform-gpu hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.28)] transition-transform"
               aria-label="Login"
             >
               Login

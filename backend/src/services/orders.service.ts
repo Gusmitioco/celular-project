@@ -1,5 +1,5 @@
-import { prisma } from "../lib/prisma";
-import { fixedCity } from "../lib/env";
+import { prisma } from "../lib/prisma.js";
+import { fixedCity } from "../lib/env.js";
 
 export class OrdersService {
   async create(input: {
