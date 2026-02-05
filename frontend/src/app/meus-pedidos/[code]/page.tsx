@@ -313,7 +313,7 @@ export default function Page() {
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 href={loginHref}
-                className="rounded-xl bg-white/[0.14] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.20] glass-fix transition hover:bg-white/[0.18]"
+                className="rounded-xl bg-white/[0.08] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.12] glass-fix transition hover:bg-white/[0.11]"
               >
                 Fazer login
               </Link>
@@ -373,7 +373,7 @@ export default function Page() {
                         type="button"
                         onClick={onDelete}
                         disabled={deleting}
-                        className="rounded-xl bg-white/[0.10] px-4 py-2 text-sm font-semibold text-dracula-accent2 ring-1 ring-white/15 transition hover:bg-white/[0.14] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="rounded-xl bg-white/[0.10] px-4 py-2 text-sm font-semibold text-dracula-accent2 ring-1 ring-white/15 transition hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {deleting ? "Cancelando…" : "Cancelar pedido"}
                       </button>

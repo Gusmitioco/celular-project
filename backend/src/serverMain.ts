@@ -95,7 +95,9 @@ const apiLimiter = rateLimit({
     if (req.method === "OPTIONS") return true;
 
     // In dev, do not rate-limit auth endpoints to avoid dev lockouts.
-    if (isDev && req.path.startsWith("/api/auth")) return true;
+    // NOTE: because the limiter is mounted at "/api", req.path will be like "/auth/...".
+    // Use originalUrl for a stable prefix check.
+    if (isDev && req.originalUrl.startsWith("/api/auth")) return true;
 
     return false;
   },
@@ -107,7 +109,7 @@ const apiSlowdown = slowDown({
   delayMs: () => 250,
   skip: (req) => {
     if (req.method === "OPTIONS") return true;
-    if (isDev && req.path.startsWith("/api/auth")) return true;
+    if (isDev && req.originalUrl.startsWith("/api/auth")) return true;
     return false;
   },
 });

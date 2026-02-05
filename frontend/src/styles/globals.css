@@ -2,6 +2,38 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@layer components {
+  /* Glass surfaces (mais transparente, padrão único para o projeto) */
+  .glass-panel {
+    @apply glass-fix rounded-2xl ring-1 ring-white/[0.12] bg-white/[0.08]
+      shadow-[0_24px_85px_-55px_rgba(0,0,0,0.85)];
+  }
+
+  .glass-card {
+    @apply glass-fix rounded-2xl ring-1 ring-white/[0.12] bg-white/[0.075]
+      shadow-[0_18px_70px_-55px_rgba(0,0,0,0.85)];
+  }
+
+  /* Um brilho diagonal sutil pra dar sensação premium sem “clarear” demais */
+  .glass-sheen {
+    position: relative;
+    overflow: hidden;
+  }
+  .glass-sheen::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    pointer-events: none;
+    background: linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0.08) 0%,
+      rgba(255, 255, 255, 0.03) 35%,
+      rgba(255, 255, 255, 0.00) 60%
+    );
+    opacity: 0.9;
+    mix-blend-mode: overlay;
+  }
+}
 
 :root {
   --dr-bg: #282a36;

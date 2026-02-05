@@ -122,7 +122,7 @@ footerContainerClassName="px-4 py-6 sm:px-6 sm:py-7 lg:px-10 overflow-visible"
             <div className="mt-4 flex flex-wrap gap-3">
               <Link
                 href={loginHref}
-                className="rounded-xl bg-white/[0.14] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.20] glass-fix transition hover:bg-white/[0.18]"
+                className="rounded-xl bg-white/[0.08] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.12] glass-fix transition hover:bg-white/[0.11]"
               >
                 Fazer login
               </Link>

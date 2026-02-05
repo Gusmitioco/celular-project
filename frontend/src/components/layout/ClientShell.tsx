@@ -37,9 +37,9 @@ export function ClientShell({ title, header, steps, children, footer, footerCont
           aria-hidden
           className={[
             "pointer-events-none absolute inset-0 rounded-3xl",
-            "bg-white/[0.14]  glass-fix",
+            "glass-panel glass-sheen",
             // Evita artefatos/hairlines do Chrome com border + 
-            "ring-1 ring-white/[0.14] ring-inset",
+            "ring-1 ring-white/[0.12] ring-inset",
             "shadow-[0_20px_70px_-45px_rgba(0,0,0,0.8)]",
             "overflow-hidden",
           ].join(" ")}
@@ -61,7 +61,7 @@ export function ClientShell({ title, header, steps, children, footer, footerCont
 
         {/* barra de ações fixa no final do card */}
         {footer ? (
-          <div className={footerContainerClassName ?? "px-4 py-5 sm:px-6 sm:py-6 lg:px-10 ring-1 ring-white/[0.14] ring-inset bg-gradient-to-r from-white/[0.06] via-white/[0.03] to-white/[0.06] overflow-visible"}>
+          <div className={footerContainerClassName ?? "px-4 py-5 sm:px-6 sm:py-6 lg:px-10 glass-card glass-sheen overflow-visible"}>
             {footer}
           </div>
         ) : null}

@@ -19,7 +19,7 @@ export function Button({ variant = "primary", className, children, ...props }: P
   const variants: Record<Variant, string> = {
     primary:
       "bg-dracula-accent text-dracula-bg shadow-[0_18px_45px_-20px_rgba(80,250,123,0.9)] hover:brightness-95 active:translate-y-[1px]",
-    secondary: "bg-white/[0.14] text-dracula-text ring-white/[0.20]  glass-fix hover:bg-white/[0.18]",
+    secondary: "bg-white/[0.08] text-dracula-text ring-1 ring-white/[0.12] glass-fix hover:bg-white/[0.11] hover:ring-white/[0.16]",
     danger: "bg-dracula-accent2 text-dracula-bg hover:brightness-95 active:translate-y-[1px]",
     // Botão de voltar segue o destaque do CTA (verde); refinamentos visuais ficam no BackButton.
     back:

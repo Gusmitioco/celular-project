@@ -36,7 +36,18 @@ export function SiteBackground({ children }: { children: React.ReactNode }) {
                 priority
                 className="object-cover object-center opacity-35"
               />
-            ) : null}
+            ) : (
+              // Fundo "waves" para todas as páginas internas (exceto Home)
+              // Mantemos ele dentro da camada com `filter: blur()` (e NÃO backdrop-blur)
+              // para evitar hairlines no Chrome.
+              <Image
+                src="/bg-waves.png"
+                alt="Fundo roxo ondulado"
+                fill
+                priority
+                className="object-cover object-center opacity-45"
+              />
+            )}
           </div>
 
           {/*

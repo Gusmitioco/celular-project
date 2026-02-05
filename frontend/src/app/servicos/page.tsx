@@ -30,7 +30,7 @@ export default function ServicosPage() {
           <Button onClick={() => (window.location.href = rotas.agendamento.marca())}>Começar agendamento</Button>
           <Link
             href={rotas.home()}
-            className="rounded-2xl bg-white/[0.14] px-5 py-3 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.20]  glass-fix transition hover:bg-white/[0.18]"
+            className="rounded-2xl bg-white/[0.08] px-5 py-3 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.12]  glass-fix transition hover:bg-white/[0.11]"
           >
             Voltar para Home
           </Link>

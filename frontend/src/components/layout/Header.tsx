@@ -47,7 +47,7 @@ export function Header() {
           <Link
             href="/meus-pedidos"
             draggable={false}
-            className="no-drag rounded-xl bg-white/[0.14] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.20]  glass-fix transition hover:bg-white/[0.18] transform-gpu hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.28)] transition-transform"
+            className="no-drag rounded-xl bg-white/[0.08] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.12]  glass-fix transition hover:bg-white/[0.11] transform-gpu hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.28)] transition-transform"
           >
             Meus Pedidos
           </Link>
@@ -67,7 +67,7 @@ export function Header() {
                 `${pathname || "/"}${searchParams?.toString() ? `?${searchParams.toString()}` : ""}`
               )}`}
               draggable={false}
-              className="no-drag rounded-xl bg-white/[0.14] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.20] glass-fix transition hover:bg-white/[0.18] transform-gpu hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.28)] transition-transform"
+              className="no-drag rounded-xl bg-white/[0.08] px-4 py-2 text-sm font-semibold text-dracula-text ring-1 ring-white/[0.12] glass-fix transition hover:bg-white/[0.11] transform-gpu hover:-translate-y-0.5 hover:shadow-[0_10px_28px_rgba(0,0,0,0.28)] transition-transform"
               aria-label="Login"
             >
               Login

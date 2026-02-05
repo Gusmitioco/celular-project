@@ -47,7 +47,7 @@ export default function HomeButton({ href = "/", className = "" }: HomeButtonPro
           "relative inline-flex w-full items-center justify-center rounded-[14px] px-5 py-3 transition-all duration-200 ease-out",
           // miolo cinza (não transparente)
           "bg-white/[0.10] text-white/90 ring-1 ring-white/15",
-          "group-hover:bg-white/[0.14] group-hover:ring-white/25 group-hover:text-white",
+          "group-hover:bg-white/[0.10] group-hover:ring-white/25 group-hover:text-white",
           // reforça o brilho no clique
           "group-active:bg-white/[0.16] group-active:ring-white/35",
         )}
