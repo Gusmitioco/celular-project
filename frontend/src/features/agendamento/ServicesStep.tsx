@@ -72,10 +72,17 @@ export function ServicesStep() {
         </div>
       </div>
 
-      <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <BackButton onClick={() => router.push(rotas.agendamento.modelo())} />
+      <div className="mt-10 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+        {/* Mobile: Voltar (esq) + Total (dir) e CTA grande abaixo */}
+        <div className="flex items-center justify-between md:block">
+          <BackButton onClick={() => router.push(rotas.agendamento.modelo())} />
+          <div className="text-sm text-dracula-text/75 md:hidden">
+            Total: <span className="font-semibold text-dracula-text">{formatBRLFromCents(totalCents)}</span>
+          </div>
+        </div>
 
-        <div className="flex items-center gap-4">
+        {/* Desktop: Total + Confirmar alinhados à direita (layout original) */}
+        <div className="hidden md:flex items-center gap-4">
           <div className="text-sm text-dracula-text/75">
             Total: <span className="font-semibold text-dracula-text">{formatBRLFromCents(totalCents)}</span>
           </div>
@@ -83,7 +90,19 @@ export function ServicesStep() {
             onClick={() => router.push(rotas.agendamento.checkout())}
             disabled={services.length === 0}
             title={services.length === 0 ? "Selecione pelo menos 1 serviço para continuar" : undefined}
-            label="Confirmar serviços" />
+            label="Confirmar serviços"
+          />
+        </div>
+
+        {/* Mobile: CTA em evidência */}
+        <div className="md:hidden">
+          <ConfirmButton
+            className="w-full"
+            onClick={() => router.push(rotas.agendamento.checkout())}
+            disabled={services.length === 0}
+            title={services.length === 0 ? "Selecione pelo menos 1 serviço para continuar" : undefined}
+            label="Confirmar serviços"
+          />
         </div>
       </div>
     </section>

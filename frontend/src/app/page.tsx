@@ -85,7 +85,7 @@ export default function HomePage() {
             </CtaLink>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-center gap-3 text-xs text-dracula-text/75">
+          <div className="mt-8 hidden flex-wrap items-center gap-3 text-xs text-dracula-text/75 sm:flex">
             <Badge>Acesso de onde quiser</Badge>
             <Badge>Sem surpresas no preço</Badge>
             <Badge>Dados do cliente protegidos</Badge>
@@ -93,7 +93,7 @@ export default function HomePage() {
         </div>
 
         <div className="col-span-12 lg:col-span-5">
-          <div className="rounded-2xl bg-white/[0.08] p-6 ring-1 ring-white/[0.12]  glass-fix">
+          <div className="rounded-2xl bg-white/[0.14] p-6 ring-1 ring-white/[0.20]  glass-fix">
             <h2 className="text-lg font-semibold text-dracula-text">Por que confiar na ConSERTE FÁCIL?</h2>
 
             <ul className="mt-5 space-y-4 text-sm text-dracula-text/80">

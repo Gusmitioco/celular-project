@@ -13,20 +13,22 @@ const rawBaseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 function fixDevHost(input: string) {
   try {
     const url = new URL(input);
-    const isZero = url.hostname === "0.0.0.0";
 
-    // If no explicit env was set, and we're on a non-localhost hostname (e.g. phone/LAN),
-    // use the current page hostname for API calls.
     const canUseWindow = typeof window !== "undefined" && !!window.location?.hostname;
     const pageHost = canUseWindow ? window.location.hostname : "";
 
-    if (isZero && canUseWindow) {
-      url.hostname = pageHost || "localhost";
-      return url.toString();
-    }
+    // When you open the frontend on a phone via LAN IP (e.g. 192.168.x.x),
+    // any API base that points to localhost/127.0.0.1/0.0.0.0 will break
+    // because "localhost" on the phone is the phone itself.
+    //
+    // So: if the page host is a LAN/real host, force the API host to match it.
+    const isPageRemoteHost =
+      !!pageHost && pageHost !== "localhost" && pageHost !== "127.0.0.1" && pageHost !== "0.0.0.0";
 
-    // If env is not set and we are accessed via LAN IP, keep API on same host.
-    if (!process.env.NEXT_PUBLIC_API_URL && canUseWindow && pageHost && pageHost !== "localhost" && pageHost !== "127.0.0.1") {
+    const isLocalApiHost =
+      url.hostname === "localhost" || url.hostname === "127.0.0.1" || url.hostname === "0.0.0.0";
+
+    if (canUseWindow && isPageRemoteHost && isLocalApiHost) {
       url.hostname = pageHost;
       return url.toString();
     }
