@@ -61,7 +61,8 @@ export function BackButton({ className, label = "Voltar", type, onPointerDown, .
           className="absolute inset-0 flex items-center justify-center opacity-0 transition-all duration-200 group-hover:opacity-100 text-[36px] leading-none"
           aria-hidden="true"
         >
-          🠔
+          <span className="hidden md:inline">🠔</span>
+          <span className="md:hidden">←</span>
         </span>
       </span>
     </button>

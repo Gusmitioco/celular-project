@@ -107,7 +107,7 @@ footerContainerClassName="px-4 py-6 sm:px-6 sm:py-7 lg:px-10 overflow-visible"
             <p className="mt-2 text-xs text-dracula-text/70">
               Se precisar, você pode criar um novo pedido a qualquer momento.
             </p>
-          </Card>
+            </Card>
         ) : null}
         {authLoading || loading ? <p className="text-sm text-dracula-text/70">Carregando…</p> : null}
 
@@ -175,10 +175,14 @@ footerContainerClassName="px-4 py-6 sm:px-6 sm:py-7 lg:px-10 overflow-visible"
               <Link
                 key={r.id}
                 href={`/meus-pedidos/${encodeURIComponent(r.code)}`}
-                className="no-drag block"
+                className="no-drag group block"
                 draggable={false}
               >
-                <Card className="cursor-pointer transition-transform transform-gpu hover:-translate-y-1 hover:shadow-[0_18px_40px_rgba(0,0,0,0.35)]">
+                <div className="relative overflow-hidden rounded-2xl bg-white/[0.06] ring-1 ring-white/[0.12] shadow-[0_14px_32px_rgba(0,0,0,0.28)] transition-all duration-200 group-hover:-translate-y-0.5 group-hover:shadow-[0_22px_52px_rgba(0,0,0,0.36)] group-hover:ring-white/[0.18] active:translate-y-0 active:shadow-[0_12px_30px_rgba(0,0,0,0.32)] p-7">
+                  <div className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                    <div className="absolute inset-0 bg-[radial-gradient(1200px_520px_at_50%_10%,rgba(255,255,255,0.10),transparent_65%)]" />
+                    <div className="absolute -top-24 left-1/2 h-48 w-[520px] -translate-x-1/2 rounded-full bg-white/10 blur-3xl" />
+                  </div>
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div>
                       <div className="text-xs font-semibold text-dracula-text/70">Código</div>
@@ -204,7 +208,7 @@ footerContainerClassName="px-4 py-6 sm:px-6 sm:py-7 lg:px-10 overflow-visible"
                   <div className="mt-4">
                     <span className="text-sm font-semibold text-dracula-accent hover:brightness-95">Ver detalhes →</span>
                   </div>
-                </Card>
+                </div>
               </Link>
             ))}
           </div>

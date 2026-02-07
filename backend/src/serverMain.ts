@@ -64,9 +64,12 @@ const corsOptions: CorsOptions = {
       return callback(null, configuredOrigins.includes(origin));
     }
 
-    // Dev: allow configuredOrigins if provided, otherwise allow known dev origins
+    // Dev:
+    // If CORS_ORIGIN was set, we *still* want to allow private LAN origins so
+    // mobile testing via http://<LAN-IP>:3000 works without constantly editing
+    // environment variables.
     if (configuredOrigins.length > 0) {
-      return callback(null, configuredOrigins.includes(origin));
+      return callback(null, configuredOrigins.includes(origin) || isAllowedDevOrigin(origin));
     }
 
     return callback(null, isAllowedDevOrigin(origin));

@@ -90,14 +90,16 @@ export default function Page() {
         </div>
       }
       footer={
-        <div className="flex items-center justify-between gap-3">
-          <HomeButton href="/" />
+        // No mobile a barra de ações estava estourando/ficando "espalhada".
+        // Em telas pequenas: empilha e deixa botões com largura total.
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <HomeButton href="/" className="w-full sm:w-auto sm:min-w-[150px]" />
 
-          <div className="flex items-center gap-3">
+          <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:items-center sm:justify-end">
             <Button
               type="button"
               variant="secondary"
-              className="min-w-[160px] rounded-2xl bg-white/[0.10] text-white ring-1 ring-white/[0.14] hover:bg-white/[0.14] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-[0_0_0_6px_rgba(255,255,255,0.14)] transition"
+              className="w-full sm:w-auto sm:min-w-[160px] rounded-2xl bg-white/[0.10] text-white ring-1 ring-white/[0.14] hover:bg-white/[0.14] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-[0_0_0_6px_rgba(255,255,255,0.14)] transition"
               onClick={() =>
                 setError(
                   "Edição de conta (nome/telefone) entra na próxima etapa — falta endpoint estável no backend."
@@ -110,7 +112,7 @@ export default function Page() {
             <Button
               type="button"
               variant="danger"
-              className="min-w-[140px] rounded-2xl bg-red-900/60 text-white ring-1 ring-red-300/20 hover:bg-red-600 hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-[0_0_0_6px_rgba(239,68,68,0.18),0_18px_55px_-30px_rgba(239,68,68,0.9)] transition-all duration-300"
+              className="w-full sm:w-auto sm:min-w-[140px] rounded-2xl bg-red-900/60 text-white ring-1 ring-red-300/20 hover:bg-red-600 hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-[0_0_0_6px_rgba(239,68,68,0.18),0_18px_55px_-30px_rgba(239,68,68,0.9)] transition-all duration-300"
               onClick={onLogout}
             >
               Sair

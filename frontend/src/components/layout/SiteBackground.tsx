@@ -45,7 +45,9 @@ export function SiteBackground({ children }: { children: React.ReactNode }) {
                 alt="Fundo roxo ondulado"
                 fill
                 priority
-                className="object-cover object-center opacity-45"
+                // No celular a arte estava aparecendo "de lado".
+                // Rotacionamos APENAS em telas pequenas e mantemos normal no desktop.
+                className="object-cover object-center opacity-45 origin-center rotate-90 md:rotate-0 scale-[1.12] md:scale-100"
               />
             )}
           </div>
