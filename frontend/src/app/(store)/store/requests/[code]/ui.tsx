@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import { formatBRLFromCents } from "../../../../../lib/format";
+import { formatBRPhone } from "../../../../../lib/phone";
 import { statusLabel } from "../../../../../lib/statusLabel";
 import { apiBaseUrl } from "@/services/api";
 
@@ -399,7 +400,7 @@ export function StoreRequestDetailsClient() {
 
             <div className="cardMeta" style={{ marginTop: 6 }}>
               Cliente: <b>{h.customer_name}</b> • {h.customer_email}
-              {h.customer_phone ? ` • ${h.customer_phone}` : ""}
+              {h.customer_phone ? ` • ${formatBRPhone(h.customer_phone)}` : ""}
             </div>
 
             <div className="cardMeta" style={{ marginTop: 6 }}>

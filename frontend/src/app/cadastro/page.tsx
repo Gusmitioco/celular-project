@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Card } from "@/components/ui/Card";
 import { api } from "@/services/api";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { formatBRPhone, normalizeBRPhoneForStorage } from "@/lib/phone";
 
 function friendlyError(msg: string) {
   if (msg.includes("email_in_use")) return "Esse e-mail já está em uso.";
@@ -15,6 +16,7 @@ function friendlyError(msg: string) {
   if (msg.includes("password_too_short")) return "A senha precisa ter pelo menos 8 caracteres.";
   if (msg.includes("password_weak")) return "A senha precisa ter letras e números.";
   if (msg.includes("password_mismatch")) return "As senhas não conferem.";
+  if (msg.includes("phone_invalid")) return "Telefone inválido. Use DDD + número (10 ou 11 dígitos).";
   return msg;
 }
 
@@ -40,7 +42,7 @@ export default function CadastroPage() {
       await api.register({
         name,
         email,
-        phone: phone || undefined,
+        phone: normalizeBRPhoneForStorage(phone) || undefined,
         password,
         passwordConfirm,
       });
@@ -97,7 +99,7 @@ export default function CadastroPage() {
               <input
                 className="w-full rounded-xl bg-white/[0.10] px-3 py-2 text-sm text-dracula-text ring-1 ring-white/[0.18] outline-none placeholder:text-dracula-text/40 focus:ring-2 focus:ring-dracula-accent glass-fix"
                 value={phone}
-                onChange={(e) => setPhone(e.target.value)}
+                onChange={(e) => setPhone(formatBRPhone(e.target.value))}
                 placeholder="(xx) xxxxx-xxxx"
                 autoComplete="tel"
               />

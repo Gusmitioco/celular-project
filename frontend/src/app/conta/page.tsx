@@ -8,6 +8,7 @@ import HomeButton from "@/components/ui/HomeButton";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { api } from "@/services/api";
+import { formatBRPhone } from "@/lib/phone";
 
 type Me = Awaited<ReturnType<typeof api.getMe>>;
 
@@ -67,8 +68,8 @@ export default function Page() {
 
   const name = (me as any)?.name ?? user?.name ?? "—";
   const email = (me as any)?.email ?? user?.email ?? "—";
-  const phone =
-    (me as any)?.phone ?? (me as any)?.whatsapp ?? (me as any)?.telefone ?? "—";
+  const phoneRaw = (me as any)?.phone ?? (me as any)?.whatsapp ?? (me as any)?.telefone ?? "";
+  const phone = phoneRaw ? formatBRPhone(String(phoneRaw)) : "—";
 
   return (
     <ClientShell
@@ -100,11 +101,7 @@ export default function Page() {
               type="button"
               variant="secondary"
               className="w-full sm:w-auto sm:min-w-[160px] rounded-2xl bg-white/[0.10] text-white ring-1 ring-white/[0.14] hover:bg-white/[0.14] hover:-translate-y-[1px] active:translate-y-[1px] active:shadow-[0_0_0_6px_rgba(255,255,255,0.14)] transition"
-              onClick={() =>
-                setError(
-                  "Edição de conta (nome/telefone) entra na próxima etapa — falta endpoint estável no backend."
-                )
-              }
+              onClick={() => (window.location.href = "/conta/editar")}
             >
               Editar conta
             </Button>

@@ -402,6 +402,26 @@ export const api = {
     return out.user;
   },
 
+  updateMe: async (data: { name?: string; phone?: string }) => {
+    const out = await http<{ ok: boolean; user: any }>(`/api/auth/me`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    return out.user;
+  },
+
+  updatePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+    newPasswordConfirm: string;
+  }) => {
+    const out = await http<{ ok: boolean }>(`/api/auth/password`, {
+      method: "PUT",
+      body: JSON.stringify(data),
+    });
+    return out.ok;
+  },
+
   login: async (data: { email: string; password: string }) => {
     const out = await http<{ ok: boolean }>(`/api/auth/login`, {
       method: "POST",
