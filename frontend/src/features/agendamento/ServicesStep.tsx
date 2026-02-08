@@ -11,6 +11,10 @@ import { formatBRLFromCents } from "@/lib/money";
 import { useAgendamento } from "./AgendamentoProvider";
 import { Card } from "@/components/ui/Card";
 
+function isScreenServiceName(name: any) {
+  return String(name ?? "").toLowerCase().includes("troca de tela");
+}
+
 export function ServicesStep() {
   const router = useRouter();
   const { brand, model, services, toggleService, totalCents, hydrated } = useAgendamento();
@@ -20,11 +24,50 @@ export function ServicesStep() {
 
   React.useEffect(() => {
     if (!model) return;
-    api
-      .getModelServices(model.id)
-      .then(setAvailable)
-      .catch((e: any) => setError(e?.message || "Erro ao carregar serviços"));
-  }, [model]);
+
+    let alive = true;
+    setError(null);
+
+    async function run() {
+      try {
+        // 1) carrega serviços do modelo
+        const svcList = await api.getModelServices(model.id);
+
+        if (!alive) return;
+
+        // 2) se existir "Troca de Tela", só mantém se houver alguma opção de tela disponível
+        const screenSvc = (svcList || []).find((s: any) => isScreenServiceName(s?.name));
+        if (screenSvc) {
+          const opts = await api.getScreenOptionsPublic(String(model.id));
+          if (!alive) return;
+
+          if (!opts || opts.length === 0) {
+            const filtered = (svcList || []).filter((s: any) => !isScreenServiceName(s?.name));
+            setAvailable(filtered);
+
+            // Se o usuário tinha selecionado "Troca de Tela" em estado persistido, desmarca.
+            const alreadySelected = services.some((x: any) => x.id === screenSvc.id);
+            if (alreadySelected) toggleService(screenSvc);
+
+            return;
+          }
+        }
+
+        setAvailable(svcList || []);
+      } catch (e: any) {
+        if (!alive) return;
+        setError(e?.message || "Erro ao carregar serviços");
+        setAvailable([]);
+      }
+    }
+
+    run();
+
+    return () => {
+      alive = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [model?.id]);
 
   React.useEffect(() => {
     // Avoid redirecting before persisted state is loaded (e.g. returning from /login).
@@ -88,7 +131,7 @@ export function ServicesStep() {
           </div>
           <ConfirmButton
             onClick={() => {
-              const wantsScreen = services.some((s) => String(s.name).toLowerCase().includes("troca de tela"));
+              const wantsScreen = services.some((s) => isScreenServiceName(s?.name));
               router.push(wantsScreen ? rotas.agendamento.tela() : rotas.agendamento.checkout());
             }}
             disabled={services.length === 0}
@@ -102,7 +145,7 @@ export function ServicesStep() {
           <ConfirmButton
             className="w-full"
             onClick={() => {
-              const wantsScreen = services.some((s) => String(s.name).toLowerCase().includes("troca de tela"));
+              const wantsScreen = services.some((s) => isScreenServiceName(s?.name));
               router.push(wantsScreen ? rotas.agendamento.tela() : rotas.agendamento.checkout());
             }}
             disabled={services.length === 0}

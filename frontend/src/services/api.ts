@@ -302,12 +302,17 @@ export const api = {
     const q = new URLSearchParams();
     q.set("modelId", modelId);
     if (citySlug) q.set("citySlug", citySlug);
+
     const raw = await http<{
       ok: boolean;
-      rows: Array<{ id: number; label: string; minPriceCents: number; maxPriceCents: number; currency: string; storeCount: number }>;
+      rows?: Array<{ id: number; label: string; minPriceCents: number; maxPriceCents: number; currency: string; storeCount: number }>;
+      error?: string;
     }>(`/api/screen-options/public?${q.toString()}`);
 
-    return raw.rows.map((o) => ({
+    if (!raw?.ok) return [];
+    const rows = Array.isArray(raw.rows) ? raw.rows : [];
+
+    return rows.map((o) => ({
       id: String(o.id),
       label: o.label,
       minPriceCents: Number(o.minPriceCents),
