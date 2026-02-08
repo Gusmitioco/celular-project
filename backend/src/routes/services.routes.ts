@@ -72,7 +72,8 @@ servicesRouter.get("/", heavyReadLimiter, async (req, res, next) => {
     );
 
     if (screenService[0]) {
-      const agg = await query<ScreenAggRow>(
+      try {
+        const agg = await query<ScreenAggRow>(
         `
         SELECT
           MIN(sp.price_cents) AS min_price_cents,
@@ -110,53 +111,12 @@ servicesRouter.get("/", heavyReadLimiter, async (req, res, next) => {
         if (idx >= 0) rows[idx] = patched;
         else rows.push(patched);
       }
-    }
-
-    // Special case: "Troca de Tela" uses screen options prices.
-    // If screen options exist for this model, expose the service with a "from" price.
-    const screenSvc = await query<{ id: number; name: string }>(
-      `SELECT id, name FROM services WHERE name = 'Troca de Tela' LIMIT 1`
-    );
-
-    if (screenSvc[0]) {
-      const agg = await query<ScreenAggRow>(
-        `
-        SELECT
-          MIN(sp.price_cents) AS min_price_cents,
-          MAX(sp.price_cents) AS max_price_cents,
-          COUNT(DISTINCT s.id) AS store_count,
-          MIN(COALESCE(sp.currency, 'BRL')) AS currency
-        FROM screen_options o
-        JOIN store_models sm ON sm.model_id = o.model_id
-        JOIN stores s ON s.id = sm.store_id
-        JOIN screen_option_prices_store sp
-          ON sp.screen_option_id = o.id
-         AND sp.store_id = s.id
-        WHERE o.active = TRUE
-          AND o.model_id = $1
-          AND TRIM(s.city) = TRIM($2)
-          AND sp.price_cents > 0
-        `,
-        [modelId, cityMatch.city]
-      );
-
-      const a = agg[0];
-      if (a && Number(a.store_count ?? 0) > 0) {
-        const sid = Number(screenSvc[0].id);
-        const idx = rows.findIndex((r) => Number(r.service_id) === sid);
-        const patched: ServiceAggRow = {
-          service_id: sid,
-          service_name: screenSvc[0].name,
-          min_price_cents: Number(a.min_price_cents ?? 0),
-          max_price_cents: Number(a.max_price_cents ?? 0),
-          store_count: Number(a.store_count ?? 0),
-          currency: a.currency ?? "BRL",
-        };
-
-        if (idx >= 0) rows[idx] = patched;
-        else rows.push(patched);
+      } catch (err) {
+        // If screen-options tables are not migrated yet, don't break the whole /services endpoint.
+        console.warn('[services] screen pricing aggregation failed:', err);
       }
     }
+
 
     rows.sort((a, b) => String(a.service_name).localeCompare(String(b.service_name)));
 

@@ -78,6 +78,8 @@ screenOptionsRouter.get("/public", heavyReadLimiter, async (req, res, next) => {
       })),
     });
   } catch (e) {
-    next(e);
+    // Don't crash the whole flow if screen-options tables are missing or not migrated yet.
+    // Frontend will treat ok:false as 'no screen options'.
+    return res.status(200).json({ ok: false, error: "screen_options_unavailable" });
   }
 });

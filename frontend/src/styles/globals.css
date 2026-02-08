@@ -290,6 +290,40 @@ a {
 }
 
 /* -------------------------------------------------------------------------- */
+/* Glass card (padrão do projeto)                                              */
+/* -------------------------------------------------------------------------- */
+
+/*
+  Objetivo:
+  - Padronizar o "vidro" em todos os cards.
+  - Manter aparência consistente entre navegadores (Safari/iOS, Chrome, Samsung Internet).
+  - Ter fallback quando "backdrop-filter" não é suportado.
+*/
+
+.glass-card {
+  border-radius: 1.5rem; /* 24px, bem arredondado */
+  border: 1px solid rgba(255, 255, 255, 0.10); /* borda branca bem fina */
+  background: rgba(90, 84, 112, 0.22); /* mais transparente (mais cara de vidro) */
+  box-shadow: 0 16px 60px rgba(0, 0, 0, 0.35);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass-card {
+    -webkit-backdrop-filter: blur(22px) saturate(120%);
+    backdrop-filter: blur(22px) saturate(120%);
+  }
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  /* Fallback para navegadores sem backdrop-filter: aumenta um pouquinho a opacidade
+     para não ficar “lavado” nem mudar demais as cores do conteúdo. */
+  .glass-card {
+    background: rgba(90, 84, 112, 0.36);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+  }
+}
+
+/* -------------------------------------------------------------------------- */
 /* Scrollbar (tema)                                                           */
 /* -------------------------------------------------------------------------- */
 

@@ -6,6 +6,10 @@ import { useAgendamento } from "./AgendamentoProvider";
 import { api } from "@/services/api";
 import { rotas } from "@/lib/rotas";
 import { formatBRLFromCents } from "@/lib/money";
+// O StepsNav é renderizado no layout de /agendamento (AgendamentoClientLayout).
+// Não renderizamos aqui para evitar duplicidade.
+import { BackButton } from "@/components/ui/BackButton";
+import { ConfirmButton } from "@/components/ui/ConfirmButton";
 
 type Opt = {
   id: string | number;
@@ -30,7 +34,7 @@ function normalizeOptions(resp: any): Opt[] {
       const id = x?.id ?? x?.screen_option_id ?? "";
       const label = String(x?.label ?? "");
 
-      // ✅ suporta range antigo e preço único novo
+      // â suporta range antigo e preÃ§o Ãºnico novo
       const priceSingle =
         x?.priceCents ?? x?.price_cents ?? x?.store_price_cents ?? null;
 
@@ -100,7 +104,7 @@ export function ScreenStep() {
       } catch (e: any) {
         if (!alive) return;
         setRows([]);
-        setErr(e?.message || "Não foi possível carregar as opções de tela");
+        setErr(e?.message || "NÃ£o foi possÃ­vel carregar as opÃ§Ãµes de tela");
       } finally {
         if (!alive) return;
         setLoading(false);
@@ -118,6 +122,8 @@ export function ScreenStep() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-6">
+      {/* MantÃ©m o marcador de etapas igual ao da pÃ¡gina de ServiÃ§os */}
+
       <div className="mb-4">
         <h1 className="text-xl font-semibold">Escolha a tela</h1>
         <p className="text-sm text-neutral-200">
@@ -140,7 +146,7 @@ export function ScreenStep() {
 
         {!loading && rows.length === 0 && (
           <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-white/80">
-            Nenhuma opção de tela disponível para este modelo.
+            Nenhuma opÃ§Ã£o de tela disponÃ­vel para este modelo.
           </div>
         )}
 
@@ -151,7 +157,7 @@ export function ScreenStep() {
             const priceText =
               o.minPriceCents === o.maxPriceCents
                 ? formatBRLFromCents(o.minPriceCents)
-                : `${formatBRLFromCents(o.minPriceCents)} – ${formatBRLFromCents(o.maxPriceCents)}`;
+                : `${formatBRLFromCents(o.minPriceCents)} â ${formatBRLFromCents(o.maxPriceCents)}`;
 
             return (
               <button
@@ -185,22 +191,16 @@ export function ScreenStep() {
       </div>
 
       <div className="mt-6 flex items-center justify-between gap-3">
-        <button
-          type="button"
-          onClick={() => router.push(rotas.agendamento.servicos())}
-          className="rounded-lg border border-white/20 bg-white/5 px-4 py-2 text-sm font-medium text-white hover:bg-white/10"
-        >
-          Voltar
-        </button>
+        {/* Voltar: mesmo botÃ£o padrÃ£o do projeto */}
+        <BackButton onClick={() => router.push(rotas.agendamento.servicos())} />
 
-        <button
-          type="button"
+        {/* Continuar: mesmo estilo do "Confirmar serviÃ§os" */}
+        <ConfirmButton
           onClick={() => router.push(rotas.agendamento.checkout())}
           disabled={!screenOption}
-          className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black disabled:opacity-50"
         >
           Continuar
-        </button>
+        </ConfirmButton>
       </div>
     </div>
   );
