@@ -18,6 +18,9 @@ import { storeRequestsRouter } from "./storeRequests.routes";
 import { storeInboxRouter } from "./storeInbox.routes";
 import { adminSecurityRouter } from "./adminSecurity.routes";
 import { storePricesRouter } from "./storePrices.routes.ts";
+import { screenOptionsRouter } from "./screenOptions.routes.ts";
+import { adminScreenOptionsRouter } from "./adminScreenOptions.routes.ts";
+import { storeScreenPricesRouter } from "./storeScreenPrices.routes.ts";
 
 export const apiRouter = Router();
 
@@ -42,6 +45,7 @@ apiRouter.use("/cities", citiesRouter);
 apiRouter.use("/brands", brandsRouter);
 apiRouter.use("/models", modelsRouter);
 apiRouter.use("/services", servicesRouter);
+apiRouter.use("/screen-options", screenOptionsRouter);
 apiRouter.use("/stores", storesRouter);
 
 apiRouter.use("/auth", authRouter);
@@ -51,6 +55,7 @@ apiRouter.use("/store-auth", storeAuthRouter);
 apiRouter.use("/store/requests", storeRequestsRouter);
 apiRouter.use("/store/inbox", storeInboxRouter);
 apiRouter.use("/store/prices", storePricesRouter);
+apiRouter.use("/store/screen-prices", storeScreenPricesRouter);
 
 apiRouter.use("/admin/prices", adminPricesRouter);
 apiRouter.use("/admin/stores", adminStoresRouter);
@@ -59,6 +64,7 @@ apiRouter.use("/admin/models", adminModelsRouter);
 apiRouter.use("/admin/store-models", adminStoreModelsRouter);
 apiRouter.use("/admin/requests", adminRequestsRouter);
 apiRouter.use("/admin/security", adminSecurityRouter);
+apiRouter.use("/admin/screen-options", adminScreenOptionsRouter);
 
 // keep auth router last under /admin to avoid accidental shadowing
 apiRouter.use("/admin", adminAuthRouter);

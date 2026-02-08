@@ -191,15 +191,20 @@ adminRequestsRouter.get("/:id", requireAdmin, async (req, res) => {
     service_name: string;
     price_cents: number;
     currency: string;
+    screen_option_id: number | null;
+    screen_option_label: string | null;
   }>(
     `
     SELECT
       i.service_id,
       sv.name as service_name,
       i.price_cents,
-      i.currency
+      i.currency,
+      i.screen_option_id,
+      o.label as screen_option_label
     FROM service_request_items i
     JOIN services sv ON sv.id = i.service_id
+    LEFT JOIN screen_options o ON o.id = i.screen_option_id
     WHERE i.request_id = $1
     ORDER BY sv.name
     `,
@@ -441,15 +446,20 @@ adminRequestsRouter.post("/:id/sync", requireAdmin, async (req, res) => {
     service_name: string;
     price_cents: number;
     currency: string;
+    screen_option_id: number | null;
+    screen_option_label: string | null;
   }>(
     `
     SELECT
       i.service_id,
       sv.name AS service_name,
       i.price_cents,
-      i.currency
+      i.currency,
+      i.screen_option_id,
+      o.label AS screen_option_label
     FROM service_request_items i
     JOIN services sv ON sv.id = i.service_id
+    LEFT JOIN screen_options o ON o.id = i.screen_option_id
     WHERE i.request_id = $1
     ORDER BY sv.name
     `,

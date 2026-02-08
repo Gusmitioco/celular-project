@@ -298,6 +298,25 @@ export const api = {
     return raw.map((s) => ({ id: String(s.id), name: s.service, priceCents: Number(s.minPriceCents) }));
   },
 
+  getScreenOptionsPublic: async (modelId: string, citySlug?: string) => {
+    const q = new URLSearchParams();
+    q.set("modelId", modelId);
+    if (citySlug) q.set("citySlug", citySlug);
+    const raw = await http<{
+      ok: boolean;
+      rows: Array<{ id: number; label: string; minPriceCents: number; maxPriceCents: number; currency: string; storeCount: number }>;
+    }>(`/api/screen-options/public?${q.toString()}`);
+
+    return raw.rows.map((o) => ({
+      id: String(o.id),
+      label: o.label,
+      minPriceCents: Number(o.minPriceCents),
+      maxPriceCents: Number(o.maxPriceCents),
+      currency: o.currency ?? "BRL",
+      storeCount: Number(o.storeCount ?? 0),
+    }));
+  },
+
   createOrder: async (data: {
     // legacy fields from the styled UI (kept for compatibility)
     customerName?: string;
@@ -309,12 +328,14 @@ export const api = {
     // optional: for future multi-city/multi-store
     citySlug?: string;
     storeId?: string;
+    screenOptionId?: string;
   }) => {
     const payload = {
       modelId: Number(data.modelId),
       serviceIds: data.serviceIds.map((x) => Number(x)),
       citySlug: data.citySlug,
       storeId: data.storeId ? Number(data.storeId) : undefined,
+      screenOptionId: data.screenOptionId ? Number(data.screenOptionId) : undefined,
     };
 
     const out = await http<{
@@ -337,6 +358,14 @@ export const api = {
       createdAt: new Date().toISOString(),
       items: [],
     } as Order;
+  },
+
+  getScreenOptionsPublic: async (modelId: string, citySlug?: string) => {
+    const q = `?modelId=${encodeURIComponent(modelId)}${citySlug ? `&citySlug=${encodeURIComponent(citySlug)}` : ""}`;
+    const raw = await http<
+      Array<{ id: number; label: string; minPriceCents: number; maxPriceCents: number; storeCount: number; currency: string }>
+    >(`/api/screen-options/public${q}`);
+    return raw;
   },
 
   getOrder: async (code: string) => {

@@ -1,0 +1,181 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAgendamento } from "./AgendamentoProvider";
+import { api } from "@/services/api";
+import { rotas } from "@/lib/rotas";
+import { formatBRLFromCents } from "@/lib/money";
+
+type Opt = {
+  id: string | number;
+  label: string;
+  minPriceCents: number;
+  maxPriceCents: number;
+  currency: string;
+  storeCount: number;
+};
+
+type ApiOk = { ok: true; rows: Opt[] };
+type ApiErr = { ok: false; error?: string; message?: string };
+type ApiResp = Opt[] | ApiOk | ApiErr | any;
+
+function extractRows(resp: ApiResp): Opt[] {
+  if (Array.isArray(resp)) return resp;
+  if (resp && typeof resp === "object" && Array.isArray((resp as any).rows)) return (resp as any).rows;
+  return [];
+}
+
+function extractError(resp: ApiResp): string | null {
+  if (resp && typeof resp === "object" && (resp as any).ok === false) {
+    return (resp as any).error || (resp as any).message || "Não foi possível carregar as opções de tela";
+  }
+  return null;
+}
+
+export function ScreenStep() {
+  const router = useRouter();
+  const { hydrated, model, services, screenOption, setScreenOption } = useAgendamento();
+
+  const [loading, setLoading] = useState(true);
+  const [rows, setRows] = useState<Opt[]>([]);
+  const [err, setErr] = useState<string | null>(null);
+
+  const wantsScreen = useMemo(() => {
+    return (services ?? []).some((s: any) => String(s?.name ?? "").toLowerCase().includes("troca de tela"));
+  }, [services]);
+
+  // mantém string para bater com a tipagem da API
+  const modelIdStr = model?.id != null ? String(model.id) : null;
+
+  useEffect(() => {
+    if (!hydrated) return;
+
+    if (!modelIdStr) {
+      router.replace(rotas.agendamento.modelo());
+      return;
+    }
+
+    if (!wantsScreen) {
+      router.replace(rotas.agendamento.checkout());
+      return;
+    }
+
+    let alive = true;
+
+    async function run(midStr: string) {
+      setLoading(true);
+      setErr(null);
+
+      try {
+        // ✅ passa string, resolve ts2345
+        const resp = await api.getScreenOptionsPublic(midStr);
+        if (!alive) return;
+
+        const apiError = extractError(resp);
+        if (apiError) {
+          setErr(apiError);
+          setRows([]);
+          return;
+        }
+
+        setRows(extractRows(resp));
+      } catch (e: any) {
+        if (!alive) return;
+        setErr(e?.message || "Não foi possível carregar as opções de tela");
+        setRows([]);
+      } finally {
+        if (!alive) return;
+        setLoading(false);
+      }
+    }
+
+    run(modelIdStr);
+
+    return () => {
+      alive = false;
+    };
+  }, [hydrated, modelIdStr, wantsScreen, router]);
+
+  if (!hydrated) return null;
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-6">
+      <div className="mb-4">
+        <h1 className="text-xl font-semibold">Escolha a tela</h1>
+        <p className="text-sm text-neutral-600">
+          Para <span className="font-medium">{model?.name}</span>. O valor pode variar por loja.
+        </p>
+      </div>
+
+      {err && (
+        <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{err}</div>
+      )}
+
+      <div className="space-y-2">
+        {loading && <div className="text-sm text-neutral-500">Carregando...</div>}
+
+        {!loading && rows.length === 0 && (
+          <div className="rounded-lg border bg-white p-4 text-sm text-neutral-600">
+            Nenhuma opção de tela cadastrada para este modelo.
+          </div>
+        )}
+
+        {!loading &&
+          rows.map((o) => {
+            const idStr = String(o.id);
+            const selected = String(screenOption?.id ?? "") === idStr;
+
+            const priceText =
+              o.minPriceCents === o.maxPriceCents
+                ? formatBRLFromCents(o.minPriceCents)
+                : `${formatBRLFromCents(o.minPriceCents)} – ${formatBRLFromCents(o.maxPriceCents)}`;
+
+            return (
+              <button
+                key={idStr}
+                type="button"
+                onClick={() =>
+                  setScreenOption({
+                    id: Number(o.id),
+                    label: o.label,
+                    priceCents: o.minPriceCents,
+                  })
+                }
+                className={`w-full rounded-lg border bg-white p-4 text-left transition hover:border-neutral-400 ${
+                  selected ? "border-neutral-900 ring-1 ring-neutral-900" : "border-neutral-200"
+                }`}
+              >
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <div className="font-medium">{o.label}</div>
+                    <div className="mt-1 text-xs text-neutral-500">{o.storeCount} loja(s) na cidade</div>
+                  </div>
+                  <div className="text-sm font-semibold">{priceText}</div>
+                </div>
+              </button>
+            );
+          })}
+      </div>
+
+      <div className="mt-6 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={() => router.push(rotas.agendamento.servicos())}
+          className="rounded-lg border border-neutral-300 bg-white px-4 py-2 text-sm font-medium"
+        >
+          Voltar
+        </button>
+
+        <button
+          type="button"
+          onClick={() => router.push(rotas.agendamento.checkout())}
+          disabled={!screenOption}
+          className="rounded-lg bg-neutral-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+        >
+          Continuar
+        </button>
+      </div>
+    </div>
+  );
+}

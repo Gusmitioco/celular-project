@@ -4,6 +4,7 @@ export type AgendamentoState = {
   brand: Brand | null;
   model: Model | null;
   services: Service[];
+  screenOption: { id: number; label: string; priceCents: number } | null;
 };
 
 const KEY = "consertfacil_agendamento_v1";
@@ -18,11 +19,16 @@ function slugifyLocal(input: string) {
 }
 
 export function loadAgendamento(): AgendamentoState {
-  if (typeof window === "undefined") return { brand: null, model: null, services: [] };
+  if (typeof window === "undefined") return { brand: null, model: null, services: [], screenOption: null };
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return { brand: null, model: null, services: [] };
+    if (!raw) return { brand: null, model: null, services: [], screenOption: null };
     const parsed = JSON.parse(raw) as AgendamentoState;
+
+    // Back-compat: older drafts didn't store screenOption
+    if (!("screenOption" in (parsed as any))) {
+      (parsed as any).screenOption = null;
+    }
 
     // Normalize legacy stored state: older builds sometimes stored brand.id as a numeric string
     // and omitted the slug. The backend expects a slug for `brandSlug`.
@@ -36,9 +42,14 @@ export function loadAgendamento(): AgendamentoState {
       }
     }
 
-    return parsed;
+    return {
+      brand: parsed?.brand ?? null,
+      model: parsed?.model ?? null,
+      services: Array.isArray(parsed?.services) ? parsed.services : [],
+      screenOption: (parsed as any)?.screenOption ?? null,
+    };
   } catch {
-    return { brand: null, model: null, services: [] };
+    return { brand: null, model: null, services: [], screenOption: null };
   }
 }
 

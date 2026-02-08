@@ -16,7 +16,7 @@ import { useAuth } from "@/components/auth/AuthProvider";
 export function CheckoutStep() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
-  const { brand, model, services, totalCents, reset, hydrated } = useAgendamento();
+  const { brand, model, services, screenOption, totalCents, reset, hydrated } = useAgendamento();
   const [error, setError] = React.useState<string | null>(null);
   const [limitInfo, setLimitInfo] = React.useState<{ max: number } | null>(null);
   const [loading, setLoading] = React.useState(false);
@@ -26,7 +26,7 @@ export function CheckoutStep() {
   // Extra safety: persist current draft before sending the user to /login or /cadastro.
   const persistDraftNow = React.useCallback(() => {
     try {
-      saveAgendamento({ brand, model, services });
+      saveAgendamento({ brand, model, services, screenOption });
     } catch {
       // ignore
     }
@@ -55,8 +55,15 @@ export function CheckoutStep() {
       return;
     }
 
+    const wantsScreen = services.some((s) => String(s.name).toLowerCase().includes("troca de tela"));
+    if (wantsScreen && !screenOption) {
+      setRedirecting(true);
+      router.replace(rotas.agendamento.tela());
+      return;
+    }
+
     setRedirecting(false);
-  }, [hydrated, brand, model, services.length, router]);
+  }, [hydrated, brand, model, services, screenOption, router]);
 
   // When returning from /login or /cadastro, the provider needs a tick to restore persisted state.
   // Don't show "missing steps" or force the user to restart before we are hydrated.
@@ -99,6 +106,7 @@ export function CheckoutStep() {
       const order = await api.createOrder({
         modelId: model.id,
         serviceIds: services.map((s) => s.id),
+        screenOptionId: screenOption ? String(screenOption.id) : undefined,
       });
       // Prevent the "missing steps" guard from firing while we navigate away.
       navigatingRef.current = true;
@@ -176,12 +184,17 @@ export function CheckoutStep() {
       <Card>
         <div className="text-sm text-dracula-text/70">Serviços selecionados</div>
         <div className="mt-3 space-y-2">
-          {services.map((s) => (
-            <div key={s.id} className="flex items-center justify-between gap-4 text-sm">
-              <span className="text-dracula-text">{s.name}</span>
-              <span className="font-semibold text-dracula-text">{formatBRLFromCents(s.priceCents)}</span>
-            </div>
-          ))}
+          {services.map((s) => {
+            const isScreen = String(s.name).toLowerCase().includes("troca de tela");
+            const title = isScreen && screenOption ? `${s.name} — ${screenOption.label}` : s.name;
+            const price = isScreen && screenOption ? screenOption.priceCents : s.priceCents;
+            return (
+              <div key={s.id} className="flex items-center justify-between gap-4 text-sm">
+                <span className="text-dracula-text">{title}</span>
+                <span className="font-semibold text-dracula-text">{formatBRLFromCents(price)}</span>
+              </div>
+            );
+          })}
         </div>
 
         <div className="mt-4 border-t border-white/10 pt-4 flex items-center justify-between">

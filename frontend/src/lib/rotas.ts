@@ -4,6 +4,7 @@ export const rotas = {
     marca: () => "/agendamento/marca",
     modelo: () => "/agendamento/modelo",
     servicos: () => "/agendamento/servicos",
+    tela: () => "/agendamento/tela",
     checkout: () => "/agendamento/checkout",
     confirmado: (orderId: string) => `/agendamento/confirmado/${orderId}`
   },
@@ -13,6 +14,7 @@ export const rotas = {
     modelos: () => "/admin/modelos",
     servicos: () => "/admin/servicos",
     lojas: () => "/admin/lojas",
-    modelosDaLoja: () => "/admin/modelos-da-loja"
+    modelosDaLoja: () => "/admin/modelos-da-loja",
+    telas: () => "/admin/telas"
   }
 } as const;

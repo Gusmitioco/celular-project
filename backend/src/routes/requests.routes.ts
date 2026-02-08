@@ -10,6 +10,35 @@ export const requestsRouter = Router();
 
 const MAX_CREATED_PER_CUSTOMER = 5;
 
+// Cache the service id for "Troca de Tela" (used as a special-case service with options)
+let cachedScreenServiceId: number | null = null;
+async function getScreenServiceId(): Promise<number | null> {
+  if (cachedScreenServiceId != null) return cachedScreenServiceId;
+  const rows = await query<{ id: number }>(
+    `SELECT id FROM services WHERE name = 'Troca de Tela' LIMIT 1`
+  );
+  cachedScreenServiceId = rows[0]?.id ? Number(rows[0].id) : null;
+  return cachedScreenServiceId;
+}
+
+async function getEffectiveScreenPriceCents(args: { storeId: number; screenOptionId: number }): Promise<number | null> {
+  const rows = await query<{ price_cents: number }>(
+    `
+    SELECT COALESCE(sp.price_cents, ap.price_cents) AS price_cents
+    FROM screen_option_prices_admin ap
+    JOIN screen_options o ON o.id = ap.screen_option_id
+    LEFT JOIN screen_option_prices_store sp
+      ON sp.screen_option_id = ap.screen_option_id
+     AND sp.store_id = $1
+    WHERE ap.screen_option_id = $2
+      AND o.active = TRUE
+    LIMIT 1
+    `,
+    [args.storeId, args.screenOptionId]
+  );
+  return rows[0] ? Number(rows[0].price_cents) : null;
+}
+
 async function resolveCityNameFromSlug(citySlug: string | undefined) {
   const defaultCityName = String(process.env.DEFAULT_CITY_NAME ?? "").trim();
   const effectiveSlug = (citySlug ?? "").trim() || (defaultCityName ? slugify(defaultCityName) : "");
@@ -30,6 +59,8 @@ async function pickStoreForRequest(args: {
   cityName?: string | null;
   modelId: number;
   serviceIds: number[];
+  screenOptionId?: number | null;
+  screenServiceId?: number | null;
 }) {
   const envStoreId = Number(process.env.DEFAULT_STORE_ID ?? NaN);
   if (Number.isFinite(envStoreId)) return envStoreId;
@@ -39,6 +70,48 @@ async function pickStoreForRequest(args: {
   // We prefer the cheapest store that covers all selected services for the given model.
   const cityName = args.cityName ?? null;
   if (!cityName) return null;
+
+  // If "Troca de Tela" is selected, the real price comes from a screen option.
+  // We still want to pick the cheapest store that covers all other services and the model.
+  const screenOptionId = args.screenOptionId ?? null;
+  const screenServiceId = args.screenServiceId ?? null;
+
+  if (screenOptionId && screenServiceId && args.serviceIds.includes(screenServiceId)) {
+    const normalServiceIds = args.serviceIds.filter((id) => id !== screenServiceId);
+
+    const rows = await query<{ store_id: number }>(
+      `
+      WITH normal AS (
+        SELECT
+          s.id AS store_id,
+          COALESCE(SUM(p.price_cents), 0) AS normal_sum,
+          COUNT(DISTINCT p.service_id) AS normal_count
+        FROM stores s
+        JOIN store_models sm ON sm.store_id = s.id AND sm.model_id = $2
+        LEFT JOIN store_model_service_prices p
+          ON p.store_id = s.id
+         AND p.model_id = $2
+         AND (CASE WHEN $5::bigint[] IS NULL THEN FALSE ELSE p.service_id = ANY($5::bigint[]) END)
+        WHERE TRIM(s.city) = TRIM($1)
+        GROUP BY s.id
+      )
+      SELECT
+        n.store_id
+      FROM normal n
+      JOIN screen_option_prices_admin ap ON ap.screen_option_id = $3
+      JOIN screen_options o ON o.id = ap.screen_option_id AND o.model_id = $2 AND o.active = TRUE
+      LEFT JOIN screen_option_prices_store sp
+        ON sp.screen_option_id = ap.screen_option_id
+       AND sp.store_id = n.store_id
+      WHERE n.normal_count = $4
+      ORDER BY (n.normal_sum + COALESCE(sp.price_cents, ap.price_cents)) ASC, n.store_id ASC
+      LIMIT 1
+      `,
+      [cityName, args.modelId, screenOptionId, normalServiceIds.length, normalServiceIds.length ? normalServiceIds : null]
+    );
+
+    return rows[0]?.store_id ? Number(rows[0].store_id) : null;
+  }
 
   const rows = await query<{ store_id: number }>(
     `
@@ -72,8 +145,9 @@ function makeCode() {
  * This fingerprint is stored in service_requests.created_fingerprint and enforced
  * by the partial unique index created in database/09_request_fingerprint.sql.
  */
-function makeCreatedFingerprint(storeId: number, modelId: number, serviceIds: number[]) {
-  const stable = `${storeId}|${modelId}|${serviceIds.join(",")}`;
+function makeCreatedFingerprint(storeId: number, modelId: number, serviceIds: number[], screenOptionId?: number | null) {
+  const extra = screenOptionId ? `|screen:${screenOptionId}` : "";
+  const stable = `${storeId}|${modelId}|${serviceIds.join(",")}${extra}`;
   return crypto.createHash("sha256").update(stable).digest("hex");
 }
 
@@ -103,12 +177,29 @@ requestsRouter.post("/", requireCustomer, createRequestLimiter, async (req, res)
   const storeId = Number(req.body?.storeId);
   const modelId = Number(req.body?.modelId);
   const serviceIds = parseIdArray(req.body?.serviceIds, 50);
+  const screenOptionIdRaw = req.body?.screenOptionId;
 
   if (!Number.isFinite(storeId)) return res.status(400).json({ ok: false, error: "storeId_invalid" });
   if (!Number.isFinite(modelId)) return res.status(400).json({ ok: false, error: "modelId_invalid" });
 
   if (serviceIds.length === 0) return res.status(400).json({ ok: false, error: "serviceIds_required" });
   if (serviceIds.length > 10) return res.status(400).json({ ok: false, error: "too_many_services" });
+
+  const screenServiceId = await getScreenServiceId();
+  const wantsScreen = !!(screenServiceId && serviceIds.includes(screenServiceId));
+  const screenOptionId = wantsScreen ? Number(screenOptionIdRaw) : null;
+
+  if (wantsScreen) {
+    if (!Number.isFinite(screenOptionId)) return res.status(400).json({ ok: false, error: "screenOptionId_required" });
+
+    // Ensure option belongs to model and is active
+    const okOpt = await query<{ ok: boolean }>(
+      `SELECT 1 as ok FROM screen_options o JOIN screen_option_prices_admin ap ON ap.screen_option_id = o.id
+       WHERE o.id = $1 AND o.model_id = $2 AND o.active = TRUE LIMIT 1`,
+      [screenOptionId, modelId]
+    );
+    if (!okOpt[0]) return res.status(400).json({ ok: false, error: "screenOption_invalid" });
+  }
 
   // 1) Limit how many CREATED requests user can have
   const createdCountRows = await query<{ n: number }>(
@@ -129,7 +220,7 @@ requestsRouter.post("/", requireCustomer, createRequestLimiter, async (req, res)
 
   // 2) Duplicate guard: same store + model + EXACT SAME services set, only while status='created'.
   // We implement this via created_fingerprint + a partial unique index.
-  const createdFingerprint = makeCreatedFingerprint(storeId, modelId, serviceIds);
+  const createdFingerprint = makeCreatedFingerprint(storeId, modelId, serviceIds, screenOptionId);
 
   // Fast-path: if an identical "created" request already exists, reuse it.
   // (If the store has already "picked" it up, status changes and this will NOT match.)
@@ -165,7 +256,8 @@ requestsRouter.post("/", requireCustomer, createRequestLimiter, async (req, res)
       SELECT
         r.id,
         r.code,
-        array_agg(i.service_id ORDER BY i.service_id) AS services
+        array_agg(i.service_id ORDER BY i.service_id) AS services,
+        MAX(i.screen_option_id) FILTER (WHERE i.service_id = $5) AS screen_option_id
       FROM service_requests r
       JOIN service_request_items i ON i.request_id = r.id
       WHERE r.customer_id = $1
@@ -177,15 +269,18 @@ requestsRouter.post("/", requireCustomer, createRequestLimiter, async (req, res)
     SELECT id, code, total_cents, currency
     FROM reqs
     WHERE services = $4::bigint[]
+      AND ($5::bigint IS NULL OR screen_option_id = $6)
     LIMIT 1
     `,
-    [customer.id, storeId, modelId, serviceIds]
+    [customer.id, storeId, modelId, serviceIds, screenServiceId, screenOptionId]
   );
   if (existingByItems[0]) {
     return res.json({ ok: true, reused: true, requestId: existingByItems[0].id, code: existingByItems[0].code });
   }
 
   // 3) Load prices for this store+model for requested services
+  const normalServiceIds = wantsScreen ? serviceIds.filter((id) => id !== screenServiceId) : serviceIds;
+
   const priced = await query<{ service_id: number; price_cents: number }>(
     `
     SELECT p.service_id, p.price_cents
@@ -194,16 +289,24 @@ requestsRouter.post("/", requireCustomer, createRequestLimiter, async (req, res)
       AND p.model_id = $2
       AND p.service_id = ANY($3::bigint[])
     `,
-    [storeId, modelId, serviceIds]
+    [storeId, modelId, normalServiceIds]
   );
 
   // Ensure every requested service has a price
   const priceMap = new Map<number, number>();
   for (const r of priced) priceMap.set(Number(r.service_id), Number(r.price_cents));
 
-  const missing = serviceIds.filter((id) => !priceMap.has(id));
+  const missing = normalServiceIds.filter((id) => !priceMap.has(id));
   if (missing.length) {
     return res.status(400).json({ ok: false, error: "missing_prices", missingServiceIds: missing });
+  }
+
+  if (wantsScreen && screenServiceId && screenOptionId) {
+    const screenPrice = await getEffectiveScreenPriceCents({ storeId, screenOptionId });
+    if (!Number.isFinite(screenPrice)) {
+      return res.status(400).json({ ok: false, error: "missing_screen_price" });
+    }
+    priceMap.set(screenServiceId, Number(screenPrice));
   }
 
   const totalCents = serviceIds.reduce((acc, sid) => acc + (priceMap.get(sid) ?? 0), 0);
@@ -265,11 +368,11 @@ requestsRouter.post("/", requireCustomer, createRequestLimiter, async (req, res)
     for (const sid of serviceIds) {
       await client.query(
         `
-        INSERT INTO service_request_items (request_id, service_id, price_cents, currency)
-        VALUES ($1, $2, $3, 'BRL')
+        INSERT INTO service_request_items (request_id, service_id, price_cents, currency, screen_option_id)
+        VALUES ($1, $2, $3, 'BRL', $4)
         ON CONFLICT (request_id, service_id) DO NOTHING
         `,
-        [createdId, sid, priceMap.get(sid) ?? 0]
+        [createdId, sid, priceMap.get(sid) ?? 0, wantsScreen && screenServiceId && sid === screenServiceId ? screenOptionId : null]
       );
     }
 
@@ -304,23 +407,46 @@ requestsRouter.post("/public", requireCustomer, createRequestLimiter, async (req
   const storeIdRaw = Number(req.body?.storeId);
   const modelId = Number(req.body?.modelId);
   const serviceIds = parseIdArray(req.body?.serviceIds, 50);
+  const screenOptionIdRaw = req.body?.screenOptionId;
 
   if (!Number.isFinite(modelId)) return res.status(400).json({ ok: false, error: "modelId_invalid" });
   if (serviceIds.length === 0) return res.status(400).json({ ok: false, error: "serviceIds_required" });
   if (serviceIds.length > 10) return res.status(400).json({ ok: false, error: "too_many_services" });
+
+  const screenServiceId = await getScreenServiceId();
+  const wantsScreen = !!(screenServiceId && serviceIds.includes(screenServiceId));
+  const screenOptionId = wantsScreen ? Number(screenOptionIdRaw) : null;
+
+  if (wantsScreen) {
+    if (!Number.isFinite(screenOptionId)) return res.status(400).json({ ok: false, error: "screenOptionId_required" });
+
+    const okOpt = await query<{ ok: boolean }>(
+      `SELECT 1 as ok FROM screen_options o JOIN screen_option_prices_admin ap ON ap.screen_option_id = o.id
+       WHERE o.id = $1 AND o.model_id = $2 AND o.active = TRUE LIMIT 1`,
+      [screenOptionId, modelId]
+    );
+    if (!okOpt[0]) return res.status(400).json({ ok: false, error: "screenOption_invalid" });
+  }
 
   // Resolve city
   const cityName = await resolveCityNameFromSlug(citySlug || undefined);
   if (!cityName) return res.status(400).json({ ok: false, error: "city_unavailable" });
 
   // Resolve store
-  const storeId = await pickStoreForRequest({ storeId: storeIdRaw, cityName, modelId, serviceIds });
+  const storeId = await pickStoreForRequest({
+    storeId: storeIdRaw,
+    cityName,
+    modelId,
+    serviceIds,
+    screenOptionId,
+    screenServiceId,
+  });
   if (!storeId) return res.status(400).json({ ok: false, error: "store_not_found_for_selection" });
 
   // Duplicate guard (same customer + store + model + exact services set) while status='created'.
   // IMPORTANT: run this BEFORE the "max created" check so that reusing an existing
   // request never gets blocked by the limit.
-  const createdFingerprint = makeCreatedFingerprint(storeId, modelId, serviceIds);
+  const createdFingerprint = makeCreatedFingerprint(storeId, modelId, serviceIds, screenOptionId);
 
   const existingPublic = await query<{ id: number; code: string; total_cents: number; currency: string }>(
     `
@@ -361,7 +487,8 @@ requestsRouter.post("/public", requireCustomer, createRequestLimiter, async (req
         r.code,
         r.total_cents,
         r.currency,
-        array_agg(i.service_id ORDER BY i.service_id) AS services
+        array_agg(i.service_id ORDER BY i.service_id) AS services,
+        MAX(i.screen_option_id) FILTER (WHERE i.service_id = $5) AS screen_option_id
       FROM service_requests r
       JOIN service_request_items i ON i.request_id = r.id
       WHERE r.customer_id = $1
@@ -370,12 +497,13 @@ requestsRouter.post("/public", requireCustomer, createRequestLimiter, async (req
         AND r.status = 'created'
       GROUP BY r.id
     )
-    SELECT id, code
+    SELECT id, code, total_cents, currency
     FROM reqs
     WHERE services = $4::bigint[]
+      AND ($5::bigint IS NULL OR screen_option_id = $6)
     LIMIT 1
     `,
-    [customer.id, storeId, modelId, serviceIds]
+    [customer.id, storeId, modelId, serviceIds, screenServiceId, screenOptionId]
   );
   if (existingPublicByItems[0]) {
     const storeRows = await query<{ name: string; address: string; city: string }>(
@@ -413,10 +541,11 @@ requestsRouter.post("/public", requireCustomer, createRequestLimiter, async (req
     await client.query("BEGIN");
 
     // Validate prices exist for all selected services in the chosen store
-    const priceRows = await client.query<{
-      service_id: number;
-      price_cents: number;
-    }>(
+    const normalServiceIds = wantsScreen && screenServiceId
+      ? serviceIds.filter((id) => id !== screenServiceId)
+      : serviceIds;
+
+    const priceRows = await client.query<{ service_id: number; price_cents: number }>(
       `
       SELECT service_id, price_cents
       FROM store_model_service_prices
@@ -424,16 +553,25 @@ requestsRouter.post("/public", requireCustomer, createRequestLimiter, async (req
         AND model_id = $2
         AND service_id = ANY($3::bigint[])
       `,
-      [storeId, modelId, serviceIds]
+      [storeId, modelId, normalServiceIds]
     );
 
-    if (priceRows.rowCount !== serviceIds.length) {
+    if (priceRows.rowCount !== normalServiceIds.length) {
       await client.query("ROLLBACK");
       return res.status(400).json({ ok: false, error: "service_not_available" });
     }
 
     const priceMap = new Map<number, number>();
     for (const r of priceRows.rows) priceMap.set(Number(r.service_id), Number(r.price_cents));
+
+    if (wantsScreen && screenServiceId && screenOptionId) {
+      const screenPrice = await getEffectiveScreenPriceCents({ storeId, screenOptionId });
+      if (!Number.isFinite(screenPrice)) {
+        await client.query("ROLLBACK");
+        return res.status(400).json({ ok: false, error: "missing_screen_price" });
+      }
+      priceMap.set(screenServiceId, Number(screenPrice));
+    }
 
     const totalCents = serviceIds.reduce((acc, sid) => acc + (priceMap.get(sid) ?? 0), 0);
 
@@ -497,11 +635,16 @@ requestsRouter.post("/public", requireCustomer, createRequestLimiter, async (req
     for (const sid of serviceIds) {
       await client.query(
         `
-        INSERT INTO service_request_items (request_id, service_id, price_cents, currency)
-        VALUES ($1, $2, $3, 'BRL')
+        INSERT INTO service_request_items (request_id, service_id, price_cents, currency, screen_option_id)
+        VALUES ($1, $2, $3, 'BRL', $4)
         ON CONFLICT (request_id, service_id) DO NOTHING
         `,
-        [createdId, sid, priceMap.get(sid) ?? 0]
+        [
+          createdId,
+          sid,
+          priceMap.get(sid) ?? 0,
+          wantsScreen && screenServiceId && sid === screenServiceId ? screenOptionId : null,
+        ]
       );
     }
 
@@ -649,15 +792,20 @@ requestsRouter.get("/me/:code", requireCustomer, heavyReadLimiter, async (req, r
     service_name: string;
     price_cents: number;
     currency: string;
+    screen_option_id: number | null;
+    screen_option_label: string | null;
   }>(
     `
     SELECT
       i.service_id,
       sv.name AS service_name,
       i.price_cents,
-      i.currency
+      i.currency,
+      i.screen_option_id,
+      o.label AS screen_option_label
     FROM service_request_items i
     JOIN services sv ON sv.id = i.service_id
+    LEFT JOIN screen_options o ON o.id = i.screen_option_id
     WHERE i.request_id = $1
     ORDER BY sv.name
     `,

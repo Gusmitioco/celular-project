@@ -34,6 +34,14 @@ export default function AdminHome() {
             <div className="chev">›</div>
           </Link>
 
+          <Link className="cardLink" href="/admin/telas">
+            <div>
+              <div className="cardTitle">Telas</div>
+              <div className="cardMeta">Opções e preço padrão de troca de tela</div>
+            </div>
+            <div className="chev">›</div>
+          </Link>
+
           <Link className="cardLink" href="/admin/services">
             <div>
               <div className="cardTitle">Serviços</div>

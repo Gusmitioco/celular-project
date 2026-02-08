@@ -29,6 +29,8 @@ type Item = {
   service_name: string;
   price_cents: number;
   currency: string;
+  screen_option_id?: number | null;
+  screen_option_label?: string | null;
 };
 
 type Msg = {
@@ -394,7 +396,9 @@ export default function Page() {
                 <ul className="mt-3 space-y-2">
                   {items.map((it) => (
                     <li key={it.service_id} className="flex items-center justify-between gap-3">
-                      <span className="text-sm text-dracula-text">{it.service_name}</span>
+                      <span className="text-sm text-dracula-text">
+                        {it.screen_option_label ? `${it.service_name} — ${it.screen_option_label}` : it.service_name}
+                      </span>
                       <span className="text-sm font-semibold text-dracula-text">{formatMoneyBRL(it.price_cents)}</span>
                     </li>
                   ))}

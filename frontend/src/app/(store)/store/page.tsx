@@ -40,6 +40,10 @@ export default async function StoreHomePage() {
           <Link className="btn" href="/store/prices">
             Preços
           </Link>
+
+          <Link className="btn" href="/store/screen-prices">
+            Telas
+          </Link>
         </div>
       </div>
 

@@ -87,7 +87,10 @@ export function ServicesStep() {
             Total: <span className="font-semibold text-dracula-text">{formatBRLFromCents(totalCents)}</span>
           </div>
           <ConfirmButton
-            onClick={() => router.push(rotas.agendamento.checkout())}
+            onClick={() => {
+              const wantsScreen = services.some((s) => String(s.name).toLowerCase().includes("troca de tela"));
+              router.push(wantsScreen ? rotas.agendamento.tela() : rotas.agendamento.checkout());
+            }}
             disabled={services.length === 0}
             title={services.length === 0 ? "Selecione pelo menos 1 serviço para continuar" : undefined}
             label="Confirmar serviços"
@@ -98,7 +101,10 @@ export function ServicesStep() {
         <div className="md:hidden">
           <ConfirmButton
             className="w-full"
-            onClick={() => router.push(rotas.agendamento.checkout())}
+            onClick={() => {
+              const wantsScreen = services.some((s) => String(s.name).toLowerCase().includes("troca de tela"));
+              router.push(wantsScreen ? rotas.agendamento.tela() : rotas.agendamento.checkout());
+            }}
             disabled={services.length === 0}
             title={services.length === 0 ? "Selecione pelo menos 1 serviço para continuar" : undefined}
             label="Confirmar serviços"

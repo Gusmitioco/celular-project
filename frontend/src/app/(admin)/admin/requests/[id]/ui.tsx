@@ -20,6 +20,8 @@ type ItemRow = {
   service_name: string;
   price_cents: number;
   currency?: string;
+  screen_option_id?: number | null;
+  screen_option_label?: string | null;
 };
 
 type MessageRow = {
@@ -450,7 +452,9 @@ export function AdminRequestDetailsClient() {
           {data.items.map((it) => (
             <div key={it.service_id} className="surface" style={{ padding: 14 }}>
               <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
-                <div style={{ fontWeight: 900 }}>{it.service_name}</div>
+                <div style={{ fontWeight: 900 }}>
+                  {it.screen_option_label ? `${it.service_name} — ${it.screen_option_label}` : it.service_name}
+                </div>
                 <div style={{ fontWeight: 900 }}>{formatBRLFromCents(it.price_cents)}</div>
               </div>
             </div>
