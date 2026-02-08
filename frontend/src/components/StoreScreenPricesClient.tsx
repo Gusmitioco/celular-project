@@ -7,7 +7,7 @@ type Brand = { id: number; name: string };
 type Model = { id: number; name: string; brand_id: number };
 
 type Row = {
-  id: string; // ✅ agora é string (não some com IDs não-numéricos)
+  id: number; // ✅ volta a ser number (é o que o backend espera no bulk)
   label: string;
   admin_price_cents: number;
   store_price_cents: number | null;
@@ -31,14 +31,13 @@ function formatCentsToText(cents: number): string {
 }
 
 function uniqById(list: Row[]): Row[] {
-  const seen = new Set<string>();
+  const seen = new Set<number>();
   const out: Row[] = [];
   for (const r of list) {
-    const id = String(r.id ?? "").trim();
-    if (!id) continue;
-    if (seen.has(id)) continue;
-    seen.add(id);
-    out.push({ ...r, id });
+    if (!Number.isFinite(r.id)) continue;
+    if (seen.has(r.id)) continue;
+    seen.add(r.id);
+    out.push(r);
   }
   return out;
 }
@@ -57,7 +56,7 @@ export function StoreScreenPricesClient() {
   const [modelId, setModelId] = useState<number | "">("");
 
   const [rows, setRows] = useState<Row[]>([]);
-  const [draft, setDraft] = useState<Record<string, string>>({}); // ✅ chave string
+  const [draft, setDraft] = useState<Record<number, string>>({});
 
   const filteredModels = useMemo(() => {
     if (!brandId) return models;
@@ -96,24 +95,29 @@ export function StoreScreenPricesClient() {
 
     const raw = Array.isArray(j.rows) ? j.rows : [];
 
-    const parsed: Row[] = raw.map((x: any) => {
-      const idStr = String(x?.id ?? "").trim(); // ✅ não converte pra number
-      const adminCents = Number(x?.admin_price_cents ?? 0);
-      const storeCents = x?.store_price_cents == null ? null : Number(x.store_price_cents);
+    // ✅ pega o id certo: screen_option_id (fallback: id)
+    const parsed: Row[] = raw
+      .map((x: any) => {
+        const idNum = Number(x?.screen_option_id ?? x?.id);
+        if (!Number.isFinite(idNum)) return null;
 
-      return {
-        id: idStr,
-        label: String(x?.label ?? ""),
-        admin_price_cents: Number.isFinite(adminCents) ? adminCents : 0,
-        store_price_cents: storeCents != null && Number.isFinite(storeCents) ? storeCents : null,
-      };
-    });
+        const adminCents = Number(x?.admin_price_cents ?? 0);
+        const storeCents = x?.store_price_cents == null ? null : Number(x.store_price_cents);
+
+        return {
+          id: idNum,
+          label: String(x?.label ?? ""),
+          admin_price_cents: Number.isFinite(adminCents) ? adminCents : 0,
+          store_price_cents: storeCents != null && Number.isFinite(storeCents) ? storeCents : null,
+        } as Row;
+      })
+      .filter(Boolean) as Row[];
 
     const list = uniqById(parsed);
 
     setRows(list);
 
-    const d: Record<string, string> = {};
+    const d: Record<number, string> = {};
     for (const r of list) d[r.id] = formatCentsToInput(r.store_price_cents);
     setDraft(d);
   }
@@ -131,14 +135,10 @@ export function StoreScreenPricesClient() {
     setError(null);
 
     try {
-      // ✅ converte para number somente aqui (se for possível)
-      const items = Object.entries(draft)
-        .map(([id, v]) => {
-          const idNum = Number(id);
-          if (!Number.isFinite(idNum)) return null; // se não dá pra converter, ignora
-          return { screenOptionId: idNum, priceCents: centsFromInput(v) };
-        })
-        .filter(Boolean) as Array<{ screenOptionId: number; priceCents: number | null }>;
+      const items = Object.entries(draft).map(([id, v]) => ({
+        screenOptionId: Number(id),
+        priceCents: centsFromInput(v),
+      }));
 
       const j = await fetch(`${api}/api/store/screen-prices/bulk`, {
         method: "POST",
@@ -200,7 +200,11 @@ export function StoreScreenPricesClient() {
 
         <div>
           <div className="label">Modelo</div>
-          <select className="input" value={modelId} onChange={(e) => setModelId(e.target.value ? Number(e.target.value) : "")}>
+          <select
+            className="input"
+            value={modelId}
+            onChange={(e) => setModelId(e.target.value ? Number(e.target.value) : "")}
+          >
             <option value="">Selecione</option>
             {filteredModels.map((m) => (
               <option key={m.id} value={m.id}>
