@@ -32,7 +32,7 @@ adminScreenOptionsRouter.get("/", async (req, res) => {
     SELECT
       o.id,
       o.label,
-      o.active,
+      o.active
     FROM screen_options o
     WHERE o.model_id = $1
     ORDER BY o.active DESC, o.label ASC

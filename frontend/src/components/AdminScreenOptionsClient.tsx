@@ -5,241 +5,357 @@ import { apiBaseUrl } from "@/services/api";
 
 type Brand = { id: number; name: string };
 type Model = { id: number; name: string; brand_id: number };
-type Row = { id: number; label: string; active: boolean };
+type ScreenRow = { id: number; label: string; active: boolean };
+
+type MetaResp = { ok: true; brands: Brand[]; models: Model[] } | { ok: false; error?: string };
+type ListResp = { ok: true; rows: ScreenRow[] } | { ok: false; error?: string };
 
 export function AdminScreenOptionsClient() {
-  const api = apiBaseUrl;
-
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
   const [brands, setBrands] = useState<Brand[]>([]);
   const [models, setModels] = useState<Model[]>([]);
 
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+
   const [brandId, setBrandId] = useState<number | "">("");
   const [modelId, setModelId] = useState<number | "">("");
+
+  const [rows, setRows] = useState<ScreenRow[]>([]);
+
+  const [newLabel, setNewLabel] = useState("");
+
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const editing = useMemo(() => rows.find((r) => r.id === editingId) ?? null, [rows, editingId]);
+  const [editLabel, setEditLabel] = useState("");
+  const [editActive, setEditActive] = useState(true);
 
   const filteredModels = useMemo(() => {
     if (!brandId) return models;
     return models.filter((m) => m.brand_id === Number(brandId));
   }, [models, brandId]);
 
-  const [rows, setRows] = useState<Row[]>([]);
-  const [draft, setDraft] = useState<Record<number, Row>>({});
-  const [newLabel, setNewLabel] = useState("");
-
-  useEffect(() => {
-    let alive = true;
+  async function loadMeta() {
     setLoading(true);
-    setError(null);
-    fetch(`${api}/api/admin/screen-options/meta`, { credentials: "include" })
-      .then((r) => r.json())
-      .then((j) => {
-        if (!alive) return;
-        if (!j?.ok) throw new Error(j?.error || "Falha ao carregar meta");
-        setBrands(j.brands || []);
-        setModels(j.models || []);
-      })
-      .catch((e: any) => alive && setError(e?.message || "Erro"))
-      .finally(() => alive && setLoading(false));
-    return () => {
-      alive = false;
-    };
-  }, [api]);
+    setMsg(null);
 
-  async function loadRows(nextModelId: number) {
-    setError(null);
-    const j = await fetch(`${api}/api/admin/screen-options?modelId=${encodeURIComponent(String(nextModelId))}`, {
+    const res = await fetch(`${apiBaseUrl}/api/admin/screen-options/meta`, {
       credentials: "include",
-    }).then((r) => r.json());
-    if (!j?.ok) throw new Error(j?.error || "Falha ao carregar opções");
-    const list: Row[] = (j.rows || []).map((x: any) => ({
-      id: Number(x.id),
-      label: String(x.label ?? ""),
-      active: Boolean(x.active),
-    }));
-    setRows(list);
-    const d: Record<number, Row> = {};
-    for (const r of list) d[r.id] = { ...r };
-    setDraft(d);
+      cache: "no-store",
+    });
+    const data = (await res.json().catch(() => null)) as MetaResp | null;
+
+    if (!res.ok || !data || (data as any).ok !== true) {
+      setBrands([]);
+      setModels([]);
+      setLoading(false);
+      setMsg((data as any)?.error ?? "Erro ao carregar marcas/modelos");
+      return;
+    }
+
+    setBrands((data as any).brands ?? []);
+    setModels((data as any).models ?? []);
+    setLoading(false);
+  }
+
+  async function loadOptions(mid: number) {
+    setMsg(null);
+    const res = await fetch(`${apiBaseUrl}/api/admin/screen-options?modelId=${encodeURIComponent(String(mid))}`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+    const data = (await res.json().catch(() => null)) as ListResp | null;
+
+    if (!res.ok || !data || (data as any).ok !== true) {
+      setRows([]);
+      setMsg((data as any)?.error ?? "Erro ao carregar telas");
+      return;
+    }
+
+    const list = Array.isArray((data as any).rows) ? ((data as any).rows as any[]) : [];
+    const parsed: ScreenRow[] = list
+      .map((x) => ({
+        id: Number(x?.id),
+        label: String(x?.label ?? ""),
+        active: Boolean(x?.active),
+      }))
+      .filter((x) => Number.isFinite(x.id) && x.label);
+
+    setRows(parsed);
   }
 
   useEffect(() => {
-    if (!modelId) return;
-    loadRows(Number(modelId)).catch((e: any) => setError(e?.message || "Erro"));
+    loadMeta();
+  }, []);
+
+  useEffect(() => {
+    // reset edit when changing selection
+    setEditingId(null);
+    setEditLabel("");
+    setEditActive(true);
+  }, [modelId]);
+
+  useEffect(() => {
+    if (!modelId) {
+      setRows([]);
+      return;
+    }
+    loadOptions(Number(modelId));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [modelId]);
 
-  async function addOption() {
-    if (!modelId) return;
+  useEffect(() => {
+    if (!editing) return;
+    setEditLabel(editing.label);
+    setEditActive(editing.active);
+  }, [editing]);
+
+  async function createOption() {
+    if (modelId === "") return setMsg("Selecione um modelo.");
     const label = newLabel.trim();
-    if (!label) return setError("Digite o nome/descrição da tela");
+    if (!label) return setMsg("Digite o nome/descrição da tela.");
 
-    setSaving(true);
-    setError(null);
+    setBusy(true);
+    setMsg(null);
     try {
-      const j = await fetch(`${api}/api/admin/screen-options`, {
+      const res = await fetch(`${apiBaseUrl}/api/admin/screen-options`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ modelId: Number(modelId), label, active: true }),
-      }).then((r) => r.json());
-      if (!j?.ok) throw new Error(j?.error || "Falha ao criar");
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        setMsg(data?.error ?? "Erro ao criar tela");
+        return;
+      }
       setNewLabel("");
-      await loadRows(Number(modelId));
-    } catch (e: any) {
-      setError(e?.message || "Erro");
+      setMsg("Tela criada ✅");
+      await loadOptions(Number(modelId));
     } finally {
-      setSaving(false);
+      setBusy(false);
     }
   }
 
-  async function saveAll() {
-    if (!modelId) return;
-    setSaving(true);
-    setError(null);
+  async function saveEdit() {
+    if (modelId === "" || editingId == null) return;
+    const label = editLabel.trim();
+    if (!label) return setMsg("Digite o nome/descrição da tela.");
+
+    setBusy(true);
+    setMsg(null);
     try {
-      const items = Object.entries(draft).map(([id, v]) => ({
-        id: Number(id),
-        label: String(v.label ?? "").trim(),
-        active: Boolean(v.active),
-      }));
-      const j = await fetch(`${api}/api/admin/screen-options/bulk`, {
+      // Reaproveita o bulk pra evitar criar nova rota.
+      const res = await fetch(`${apiBaseUrl}/api/admin/screen-options/bulk`, {
         method: "POST",
-        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modelId: Number(modelId), items }),
-      }).then((r) => r.json());
-      if (!j?.ok) throw new Error(j?.error || "Falha ao salvar");
-      await loadRows(Number(modelId));
-    } catch (e: any) {
-      setError(e?.message || "Erro");
+        credentials: "include",
+        body: JSON.stringify({
+          modelId: Number(modelId),
+          items: [{ id: editingId, label, active: editActive }],
+        }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        setMsg(data?.error ?? "Erro ao salvar");
+        return;
+      }
+      setEditingId(null);
+      setMsg("Alterações salvas ✅");
+      await loadOptions(Number(modelId));
     } finally {
-      setSaving(false);
+      setBusy(false);
     }
   }
 
-  if (loading) return <div className="sub">Carregando...</div>;
+  async function deactivate(id: number) {
+    const ok = confirm("Desativar esta tela? (Ela pode ficar indisponível para novas escolhas)");
+    if (!ok) return;
+
+    setBusy(true);
+    setMsg(null);
+    try {
+      const res = await fetch(`${apiBaseUrl}/api/admin/screen-options/${id}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok || !data?.ok) {
+        setMsg(data?.error ?? "Erro ao desativar");
+        return;
+      }
+      setMsg("Tela desativada ✅");
+      if (modelId !== "") await loadOptions(Number(modelId));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const groupedByModel = useMemo(() => {
+    const map = new Map<number, ScreenRow[]>();
+    for (const r of rows) {
+      // rows já são do model selecionado, mas mantém preparado.
+      const arr = map.get(Number(modelId)) ?? [];
+      arr.push(r);
+      map.set(Number(modelId), arr);
+    }
+    return Array.from(map.values())[0] ?? [];
+  }, [rows, modelId]);
 
   return (
-    <div className="card" style={{ marginTop: 12 }}>
-      {error ? (
-        <div className="warn" style={{ marginBottom: 10 }}>
-          {error}
+    <div className="surface" style={{ padding: 16 }}>
+      <div style={{ fontWeight: 900, marginBottom: 10 }}>Selecionar modelo</div>
+
+      {loading ? (
+        <p className="sub">Carregando...</p>
+      ) : (
+        <div className="grid" style={{ gap: 10 }}>
+          <div className="grid grid-2">
+            <select
+              value={brandId}
+              onChange={(e) => {
+                const next = e.target.value ? Number(e.target.value) : "";
+                setBrandId(next);
+                setModelId("");
+                setRows([]);
+                setEditingId(null);
+              }}
+              style={{ padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}
+            >
+              <option value="">Todas as marcas…</option>
+              {brands.map((b) => (
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
+              ))}
+            </select>
+
+            <select
+              value={modelId}
+              onChange={(e) => setModelId(e.target.value ? Number(e.target.value) : "")}
+              style={{ padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}
+            >
+              <option value="">Selecione o modelo…</option>
+              {filteredModels.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="btnRow">
+            <button
+              className="btn"
+              type="button"
+              disabled={!modelId || busy}
+              onClick={() => modelId && loadOptions(Number(modelId))}
+            >
+              Recarregar
+            </button>
+            {msg && <small>{msg}</small>}
+          </div>
         </div>
-      ) : null}
+      )}
 
-      <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-        <div style={{ minWidth: 220 }}>
-          <div className="label">Marca</div>
-          <select
-            className="input"
-            value={brandId}
-            onChange={(e) => {
-              setBrandId(e.target.value ? Number(e.target.value) : "");
-              setModelId("");
-              setRows([]);
-              setDraft({});
-            }}
-          >
-            <option value="">Todas</option>
-            {brands.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name}
-              </option>
-            ))}
-          </select>
-        </div>
+      <div style={{ borderTop: "1px solid var(--border)", margin: "16px 0" }} />
 
-        <div style={{ minWidth: 260 }}>
-          <div className="label">Modelo</div>
-          <select className="input" value={modelId} onChange={(e) => setModelId(e.target.value ? Number(e.target.value) : "")}>
-            <option value="">Selecione</option>
-            {filteredModels.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 10 }}>
-          <button
-            className="btn"
-            disabled={!modelId || saving}
-            onClick={() => modelId && loadRows(Number(modelId)).catch((e) => setError(String(e?.message || e)))}
-          >
-            Recarregar
-          </button>
-          <button className="btn primary" disabled={!modelId || saving} onClick={saveAll}>
-            {saving ? "Salvando..." : "Salvar tudo"}
-          </button>
-        </div>
-      </div>
-
-      <div style={{ height: 12 }} />
-
-      <div className="row" style={{ gap: 10, flexWrap: "wrap" }}>
-        <div style={{ flex: 1, minWidth: 280 }}>
-          <div className="label">Nova opção de tela</div>
+      <div style={{ fontWeight: 900, marginBottom: 10 }}>Adicionar tela</div>
+      <div className="grid" style={{ gap: 10 }}>
+        <div className="grid grid-2">
           <input
-            className="input"
-            placeholder="Ex: IMPORTADA LCD VD (PRETO/BRANCO)"
             value={newLabel}
             onChange={(e) => setNewLabel(e.target.value)}
+            placeholder="Ex: IMPORTADA LCD VD (PRETO/BRANCO)"
+            style={{ padding: 12, borderRadius: 12, border: "1px solid var(--border)", gridColumn: "1 / -1" }}
           />
         </div>
-        <div style={{ display: "flex", alignItems: "flex-end" }}>
-          <button className="btn" disabled={!modelId || saving} onClick={addOption}>
-            Adicionar
+        <div className="btnRow">
+          <button className="btn btnPrimary" type="button" disabled={!modelId || busy} onClick={createOption}>
+            {busy ? "Salvando..." : "Criar"}
           </button>
+          <small className="sub">As telas são exclusivas do modelo selecionado.</small>
         </div>
       </div>
 
-      <div style={{ height: 14 }} />
+      <div style={{ borderTop: "1px solid var(--border)", margin: "16px 0" }} />
 
-      <div style={{ overflowX: "auto" }}>
-        <table className="table" style={{ width: "100%" }}>
-          <thead>
-            <tr>
-              <th style={{ textAlign: "left" }}>Tela</th>
-              <th style={{ width: 110, textAlign: "center" }}>Ativo</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.length === 0 ? (
-              <tr>
-                <td colSpan={2} className="sub" style={{ padding: 12 }}>
-                  Selecione um modelo para ver as opções.
-                </td>
-              </tr>
-            ) : (
-              rows.map((r) => {
-                const d = draft[r.id] || r;
-                return (
-                  <tr key={r.id}>
-                    <td>
-                      <input
-                        className="input"
-                        value={d.label}
-                        onChange={(e) => setDraft((prev) => ({ ...prev, [r.id]: { ...d, label: e.target.value } }))}
-                      />
-                    </td>
-                    <td style={{ textAlign: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={!!d.active}
-                        onChange={(e) => setDraft((prev) => ({ ...prev, [r.id]: { ...d, active: e.target.checked } }))}
-                      />
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
+      <div style={{ fontWeight: 900, marginBottom: 10 }}>Telas cadastradas</div>
+
+      {!modelId ? (
+        <p className="sub">Selecione um modelo para ver as telas.</p>
+      ) : groupedByModel.length === 0 ? (
+        <p className="sub">Nenhuma tela cadastrada para este modelo.</p>
+      ) : (
+        <div className="grid" style={{ gap: 10 }}>
+          {groupedByModel.map((r) => (
+            <div
+              key={r.id}
+              style={{
+                border: "1px solid var(--border)",
+                borderRadius: "var(--radius)",
+                padding: 14,
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 12,
+                alignItems: "center",
+              }}
+            >
+              <div>
+                <div className="cardTitle">{r.label}</div>
+                <div className="cardMeta">
+                  ID: {r.id} • {r.active ? "Ativa" : "Inativa"}
+                </div>
+              </div>
+
+              <div className="btnRow">
+                <button className="btn" type="button" onClick={() => setEditingId(r.id)}>
+                  Editar
+                </button>
+                <button className="btn" type="button" onClick={() => deactivate(r.id)} disabled={busy || !r.active}>
+                  Desativar
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {editingId != null && (
+        <div style={{ marginTop: 16 }}>
+          <div style={{ fontWeight: 900, marginBottom: 10 }}>Editar tela</div>
+          <div
+            className="grid"
+            style={{
+              border: "1px solid var(--border)",
+              borderRadius: "var(--radius)",
+              padding: 14,
+              gap: 10,
+            }}
+          >
+            <input
+              value={editLabel}
+              onChange={(e) => setEditLabel(e.target.value)}
+              placeholder="Nome/descrição"
+              style={{ padding: 12, borderRadius: 12, border: "1px solid var(--border)" }}
+            />
+
+            <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <input type="checkbox" checked={editActive} onChange={(e) => setEditActive(e.target.checked)} />
+              <span>Ativa</span>
+            </label>
+
+            <div className="btnRow">
+              <button className="btn btnPrimary" type="button" onClick={saveEdit} disabled={busy}>
+                {busy ? "Salvando..." : "Salvar"}
+              </button>
+              <button className="btn" type="button" onClick={() => setEditingId(null)} disabled={busy}>
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="sub" style={{ marginTop: 10 }}>
         Preços de telas são configurados por loja em <b>Admin → Preços de tela</b> ou pela própria loja.
