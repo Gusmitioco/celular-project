@@ -21,6 +21,7 @@ import { storePricesRouter } from "./storePrices.routes.ts";
 import { screenOptionsRouter } from "./screenOptions.routes.ts";
 import { adminScreenOptionsRouter } from "./adminScreenOptions.routes.ts";
 import { storeScreenPricesRouter } from "./storeScreenPrices.routes.ts";
+import { adminScreenPricesRouter } from "./adminScreenPrices.routes";
 
 export const apiRouter = Router();
 
@@ -65,6 +66,8 @@ apiRouter.use("/admin/store-models", adminStoreModelsRouter);
 apiRouter.use("/admin/requests", adminRequestsRouter);
 apiRouter.use("/admin/security", adminSecurityRouter);
 apiRouter.use("/admin/screen-options", adminScreenOptionsRouter);
+apiRouter.use("/admin/screen-prices", adminScreenPricesRouter);
+apiRouter.use("/admin/screen-prices", adminScreenPricesRouter);
 
 // keep auth router last under /admin to avoid accidental shadowing
 apiRouter.use("/admin", adminAuthRouter);

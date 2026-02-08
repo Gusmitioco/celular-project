@@ -24,14 +24,13 @@ async function getScreenServiceId(): Promise<number | null> {
 async function getEffectiveScreenPriceCents(args: { storeId: number; screenOptionId: number }): Promise<number | null> {
   const rows = await query<{ price_cents: number }>(
     `
-    SELECT COALESCE(sp.price_cents, ap.price_cents) AS price_cents
-    FROM screen_option_prices_admin ap
-    JOIN screen_options o ON o.id = ap.screen_option_id
-    LEFT JOIN screen_option_prices_store sp
-      ON sp.screen_option_id = ap.screen_option_id
-     AND sp.store_id = $1
-    WHERE ap.screen_option_id = $2
+    SELECT sp.price_cents AS price_cents
+    FROM screen_option_prices_store sp
+    JOIN screen_options o ON o.id = sp.screen_option_id
+    WHERE sp.store_id = $1
+      AND sp.screen_option_id = $2
       AND o.active = TRUE
+      AND sp.price_cents > 0
     LIMIT 1
     `,
     [args.storeId, args.screenOptionId]
@@ -98,13 +97,13 @@ async function pickStoreForRequest(args: {
       SELECT
         n.store_id
       FROM normal n
-      JOIN screen_option_prices_admin ap ON ap.screen_option_id = $3
-      JOIN screen_options o ON o.id = ap.screen_option_id AND o.model_id = $2 AND o.active = TRUE
-      LEFT JOIN screen_option_prices_store sp
-        ON sp.screen_option_id = ap.screen_option_id
+      JOIN screen_options o ON o.id = $3 AND o.model_id = $2 AND o.active = TRUE
+      JOIN screen_option_prices_store sp
+        ON sp.screen_option_id = o.id
        AND sp.store_id = n.store_id
       WHERE n.normal_count = $4
-      ORDER BY (n.normal_sum + COALESCE(sp.price_cents, ap.price_cents)) ASC, n.store_id ASC
+        AND sp.price_cents > 0
+      ORDER BY (n.normal_sum + sp.price_cents) ASC, n.store_id ASC
       LIMIT 1
       `,
       [cityName, args.modelId, screenOptionId, normalServiceIds.length, normalServiceIds.length ? normalServiceIds : null]
@@ -194,7 +193,7 @@ requestsRouter.post("/", requireCustomer, createRequestLimiter, async (req, res)
 
     // Ensure option belongs to model and is active
     const okOpt = await query<{ ok: boolean }>(
-      `SELECT 1 as ok FROM screen_options o JOIN screen_option_prices_admin ap ON ap.screen_option_id = o.id
+      `SELECT 1 as ok FROM screen_options o
        WHERE o.id = $1 AND o.model_id = $2 AND o.active = TRUE LIMIT 1`,
       [screenOptionId, modelId]
     );
@@ -421,7 +420,7 @@ requestsRouter.post("/public", requireCustomer, createRequestLimiter, async (req
     if (!Number.isFinite(screenOptionId)) return res.status(400).json({ ok: false, error: "screenOptionId_required" });
 
     const okOpt = await query<{ ok: boolean }>(
-      `SELECT 1 as ok FROM screen_options o JOIN screen_option_prices_admin ap ON ap.screen_option_id = o.id
+      `SELECT 1 as ok FROM screen_options o
        WHERE o.id = $1 AND o.model_id = $2 AND o.active = TRUE LIMIT 1`,
       [screenOptionId, modelId]
     );

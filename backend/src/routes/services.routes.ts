@@ -75,20 +75,20 @@ servicesRouter.get("/", heavyReadLimiter, async (req, res, next) => {
       const agg = await query<ScreenAggRow>(
         `
         SELECT
-          MIN(COALESCE(sp.price_cents, ap.price_cents)) AS min_price_cents,
-          MAX(COALESCE(sp.price_cents, ap.price_cents)) AS max_price_cents,
+          MIN(sp.price_cents) AS min_price_cents,
+          MAX(sp.price_cents) AS max_price_cents,
           COUNT(DISTINCT s.id) AS store_count,
-          MIN(COALESCE(sp.currency, ap.currency)) AS currency
+          MIN(COALESCE(sp.currency, 'BRL')) AS currency
         FROM screen_options o
-        JOIN screen_option_prices_admin ap ON ap.screen_option_id = o.id
         JOIN store_models sm ON sm.model_id = o.model_id
         JOIN stores s ON s.id = sm.store_id
-        LEFT JOIN screen_option_prices_store sp
+        JOIN screen_option_prices_store sp
           ON sp.screen_option_id = o.id
          AND sp.store_id = s.id
         WHERE o.active = TRUE
           AND o.model_id = $1
           AND TRIM(s.city) = TRIM($2)
+          AND sp.price_cents > 0
         `,
         [modelId, cityMatch.city]
       );
@@ -122,20 +122,20 @@ servicesRouter.get("/", heavyReadLimiter, async (req, res, next) => {
       const agg = await query<ScreenAggRow>(
         `
         SELECT
-          MIN(COALESCE(sp.price_cents, ap.price_cents)) AS min_price_cents,
-          MAX(COALESCE(sp.price_cents, ap.price_cents)) AS max_price_cents,
+          MIN(sp.price_cents) AS min_price_cents,
+          MAX(sp.price_cents) AS max_price_cents,
           COUNT(DISTINCT s.id) AS store_count,
-          MIN(COALESCE(sp.currency, ap.currency)) AS currency
+          MIN(COALESCE(sp.currency, 'BRL')) AS currency
         FROM screen_options o
-        JOIN screen_option_prices_admin ap ON ap.screen_option_id = o.id
         JOIN store_models sm ON sm.model_id = o.model_id
         JOIN stores s ON s.id = sm.store_id
-        LEFT JOIN screen_option_prices_store sp
+        JOIN screen_option_prices_store sp
           ON sp.screen_option_id = o.id
          AND sp.store_id = s.id
         WHERE o.active = TRUE
           AND o.model_id = $1
           AND TRIM(s.city) = TRIM($2)
+          AND sp.price_cents > 0
         `,
         [modelId, cityMatch.city]
       );

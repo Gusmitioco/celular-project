@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { apiBaseUrl } from "@/services/api";
 
+type Store = { id: number; name: string; city: string };
 type Brand = { id: number; name: string };
 type Model = { id: number; name: string; brand_id: number };
 
@@ -27,16 +28,18 @@ function centsFromInput(v: string): number | null {
   return Math.round(n * 100);
 }
 
-export function StoreScreenPricesClient() {
+export function AdminScreenPricesClient() {
   const api = apiBaseUrl;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const [stores, setStores] = useState<Store[]>([]);
   const [brands, setBrands] = useState<Brand[]>([]);
   const [models, setModels] = useState<Model[]>([]);
 
+  const [storeId, setStoreId] = useState<number | "">("");
   const [brandId, setBrandId] = useState<number | "">("");
   const [modelId, setModelId] = useState<number | "">("");
 
@@ -54,30 +57,30 @@ export function StoreScreenPricesClient() {
     let alive = true;
     setLoading(true);
     setError(null);
-
-    fetch(`${api}/api/store/screen-prices/meta`, { credentials: "include" })
+    fetch(`${api}/api/admin/screen-prices/meta`, { credentials: "include" })
       .then((r) => r.json())
       .then((j) => {
         if (!alive) return;
         if (!j?.ok) throw new Error(j?.error || "Falha ao carregar meta");
+        setStores(j.stores || []);
         setBrands(j.brands || []);
         setModels(j.models || []);
       })
       .catch((e: any) => alive && setError(e?.message || "Erro"))
       .finally(() => alive && setLoading(false));
-
     return () => {
       alive = false;
     };
   }, [api]);
 
-  async function loadRows(nextModelId: number) {
+  async function loadRows(nextStoreId: number, nextModelId: number) {
     setError(null);
-
-    const j = await fetch(`${api}/api/store/screen-prices?modelId=${encodeURIComponent(String(nextModelId))}`, {
-      credentials: "include",
-    }).then((r) => r.json());
-
+    const j = await fetch(
+      `${api}/api/admin/screen-prices?storeId=${encodeURIComponent(String(nextStoreId))}&modelId=${encodeURIComponent(
+        String(nextModelId)
+      )}`,
+      { credentials: "include" }
+    ).then((r) => r.json());
     if (!j?.ok) throw new Error(j?.error || "Falha ao carregar telas");
 
     const list: Row[] = (j.rows || []).map((x: any) => ({
@@ -104,21 +107,22 @@ export function StoreScreenPricesClient() {
   }
 
   useEffect(() => {
-    if (!modelId) return;
-    loadRows(Number(modelId)).catch((e: any) => setError(e?.message || "Erro"));
+    if (!storeId || !modelId) return;
+    loadRows(Number(storeId), Number(modelId)).catch((e: any) => setError(e?.message || "Erro"));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modelId]);
+  }, [storeId, modelId]);
 
   function onToggle(id: number, next: boolean) {
     setDraftAvailable((prev) => ({ ...prev, [id]: next }));
     if (!next) return;
 
-    // When enabling, do not auto-fill — user must type a price.
+    // When enabling, DO NOT auto-fill a value.
+    // If they already have a draft value, keep it; otherwise keep empty and force user to input.
     setDraftPrice((prev) => ({ ...prev, [id]: prev[id] ?? "" }));
   }
 
   async function saveAll() {
-    if (!modelId) return;
+    if (!storeId || !modelId) return;
 
     // Frontend validation: toggle ON requires price > 0
     for (const r of rows) {
@@ -133,7 +137,6 @@ export function StoreScreenPricesClient() {
 
     setSaving(true);
     setError(null);
-
     try {
       const items = rows.map((r) => {
         const available = !!draftAvailable[r.id];
@@ -145,16 +148,15 @@ export function StoreScreenPricesClient() {
         };
       });
 
-      const j = await fetch(`${api}/api/store/screen-prices/bulk`, {
+      const j = await fetch(`${api}/api/admin/screen-prices/bulk`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ modelId: Number(modelId), items }),
+        body: JSON.stringify({ storeId: Number(storeId), modelId: Number(modelId), items }),
       }).then((r) => r.json());
-
       if (!j?.ok) throw new Error(j?.error || "Falha ao salvar");
 
-      await loadRows(Number(modelId));
+      await loadRows(Number(storeId), Number(modelId));
     } catch (e: any) {
       setError(e?.message || "Erro");
     } finally {
@@ -162,27 +164,40 @@ export function StoreScreenPricesClient() {
     }
   }
 
-  const canAct = !!modelId && !saving;
-
   if (loading) return <div className="sub">Carregando...</div>;
 
   return (
-    <div className="card" style={{ marginTop: 16 }}>
+    <div className="card" style={{ marginTop: 12 }}>
       {error ? (
-        <div className="warn" style={{ marginBottom: 12 }}>
+        <div className="warn" style={{ marginBottom: 10 }}>
           {error}
         </div>
       ) : null}
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "minmax(220px, 1fr) minmax(260px, 1.2fr) auto",
-          gap: 12,
-          alignItems: "end",
-        }}
-      >
-        <div>
+      <div className="row" style={{ gap: 10, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <div style={{ minWidth: 260 }}>
+          <div className="label">Loja</div>
+          <select
+            className="input"
+            value={storeId}
+            onChange={(e) => {
+              setStoreId(e.target.value ? Number(e.target.value) : "");
+              setRows([]);
+              setDraftAvailable({});
+              setDraftPrice({});
+              setDraftLast({});
+            }}
+          >
+            <option value="">Selecione</option>
+            {stores.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.city} — {s.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div style={{ minWidth: 220 }}>
           <div className="label">Marca</div>
           <select
             className="input"
@@ -191,9 +206,6 @@ export function StoreScreenPricesClient() {
               setBrandId(e.target.value ? Number(e.target.value) : "");
               setModelId("");
               setRows([]);
-              setDraftAvailable({});
-              setDraftPrice({});
-              setDraftLast({});
             }}
           >
             <option value="">Todas</option>
@@ -205,9 +217,16 @@ export function StoreScreenPricesClient() {
           </select>
         </div>
 
-        <div>
+        <div style={{ minWidth: 260 }}>
           <div className="label">Modelo</div>
-          <select className="input" value={modelId} onChange={(e) => setModelId(e.target.value ? Number(e.target.value) : "")}>
+          <select
+            className="input"
+            value={modelId}
+            onChange={(e) => {
+              setModelId(e.target.value ? Number(e.target.value) : "");
+              setRows([]);
+            }}
+          >
             <option value="">Selecione</option>
             {filteredModels.map((m) => (
               <option key={m.id} value={m.id}>
@@ -217,61 +236,59 @@ export function StoreScreenPricesClient() {
           </select>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 240 }}>
-          <div className="label" style={{ opacity: 0, userSelect: "none" }}>
-            Ações
-          </div>
-          <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button
-              className="btn"
-              disabled={!canAct}
-              onClick={() => modelId && loadRows(Number(modelId)).catch((e: any) => setError(e?.message || "Erro"))}
-            >
-              Recarregar
-            </button>
-            <button className="btn primary" disabled={!canAct} onClick={saveAll}>
-              {saving ? "Salvando..." : "Salvar tudo"}
-            </button>
-          </div>
+        <div style={{ display: "flex", gap: 10, alignItems: "flex-end" }}>
+          <button
+            className="btn"
+            disabled={!storeId || !modelId || saving}
+            onClick={() =>
+              storeId && modelId &&
+              loadRows(Number(storeId), Number(modelId)).catch((e: any) => setError(e?.message || "Erro"))
+            }
+          >
+            Recarregar
+          </button>
+          <button className="btn primary" disabled={!storeId || !modelId || saving} onClick={saveAll}>
+            {saving ? "Salvando..." : "Salvar tudo"}
+          </button>
         </div>
       </div>
 
-      <div style={{ height: 16 }} />
+      <div style={{ height: 14 }} />
 
       <div style={{ overflowX: "auto" }}>
-        <table className="table" style={{ width: "100%", borderCollapse: "separate", borderSpacing: 0 }}>
+        <table className="table" style={{ width: "100%" }}>
           <thead>
             <tr>
-              <th style={{ textAlign: "left", padding: "10px 12px" }}>Tela</th>
-              <th style={{ width: 130, textAlign: "center", padding: "10px 12px" }}>Disponível</th>
-              <th style={{ width: 240, textAlign: "left", padding: "10px 12px" }}>Preço (R$)</th>
+              <th style={{ textAlign: "left" }}>Tela</th>
+              <th style={{ width: 130, textAlign: "center" }}>Disponível</th>
+              <th style={{ width: 200 }}>Preço (R$)</th>
             </tr>
           </thead>
-
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={3} style={{ padding: "12px", opacity: 0.85 }}>
-                  <span className="sub">Selecione um modelo para ver as opções.</span>
+                <td colSpan={3} className="sub" style={{ padding: 12 }}>
+                  Selecione loja e modelo para carregar as telas.
                 </td>
               </tr>
             ) : (
               rows.map((r) => {
                 const available = !!draftAvailable[r.id];
+                const disabled = !available;
                 return (
                   <tr key={r.id}>
-                    <td style={{ padding: "10px 12px" }}>
+                    <td>
                       <div style={{ fontWeight: 600 }}>{r.label}</div>
                       {!r.active ? <div className="sub">(opção desativada no catálogo)</div> : null}
                     </td>
-                    <td style={{ padding: "10px 12px", textAlign: "center" }}>
+                    <td style={{ textAlign: "center" }}>
                       <input type="checkbox" checked={available} onChange={(e) => onToggle(r.id, e.target.checked)} />
                     </td>
-                    <td style={{ padding: "10px 12px" }}>
+                    <td>
                       <input
                         className="input"
                         placeholder={available ? "Ex: 169,99" : "Indisponível"}
-                        disabled={!available}
+                        disabled={disabled}
                         value={draftPrice[r.id] ?? ""}
                         onChange={(e) => setDraftPrice((prev) => ({ ...prev, [r.id]: e.target.value }))}
                       />

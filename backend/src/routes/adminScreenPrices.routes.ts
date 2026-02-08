@@ -1,30 +1,37 @@
 import { Router } from "express";
-import { query, pool } from "../db.js";
-import { requireStoreUser } from "../auth/storeAuth";
+import { pool, query } from "../db.js";
+import { requireAdmin } from "../middleware/adminAuth";
 
-export const storeScreenPricesRouter = Router();
+// Admin can set screen option prices per store (similar to /admin/prices)
+// price_cents = 0 => unavailable
+// last_price_cents stores the last non-zero value to support a UI toggle
 
-storeScreenPricesRouter.use(requireStoreUser);
+export const adminScreenPricesRouter = Router();
 
-// GET /store/screen-prices/meta
-storeScreenPricesRouter.get("/meta", async (req, res) => {
-  const storeUser = (req as any).storeUser as { storeId: number; storeName: string; storeCity: string };
+adminScreenPricesRouter.use(requireAdmin);
 
-  const store = { id: storeUser.storeId, name: storeUser.storeName, city: storeUser.storeCity };
-  const brands = await query<{ id: number; name: string }>(`SELECT id, name FROM brands ORDER BY name ASC`);
-  const models = await query<{ id: number; name: string; brand_id: number }>(
-    `SELECT id, name, brand_id FROM models ORDER BY name ASC`
+// GET /admin/screen-prices/meta
+adminScreenPricesRouter.get("/meta", async (_req, res) => {
+  const stores = await query<{ id: number; name: string; city: string }>(
+    `SELECT id, name, city FROM stores ORDER BY city, name`
   );
-
-  return res.json({ ok: true, store, brands, models });
+  const brands = await query<{ id: number; name: string }>(
+    `SELECT id, name FROM brands ORDER BY name`
+  );
+  const models = await query<{ id: number; name: string; brand_id: number }>(
+    `SELECT id, name, brand_id FROM models ORDER BY name`
+  );
+  res.json({ ok: true, stores, brands, models });
 });
 
-// GET /store/screen-prices?modelId=...
-// Returns all screen options for the model with current store price (0 = unavailable).
-storeScreenPricesRouter.get("/", async (req, res) => {
-  const storeUser = (req as any).storeUser as { storeId: number };
+// GET /admin/screen-prices?storeId=...&modelId=...
+// Returns all active+inactive options for the model and current store price (0 or null if missing)
+adminScreenPricesRouter.get("/", async (req, res) => {
+  const storeId = Number(req.query.storeId);
   const modelId = Number(req.query.modelId);
-  if (!Number.isFinite(modelId)) return res.status(400).json({ ok: false, error: "modelId_invalid" });
+  if (!Number.isFinite(storeId) || !Number.isFinite(modelId)) {
+    return res.status(400).json({ ok: false, error: "storeId and modelId are required" });
+  }
 
   const rows = await query<{
     screen_option_id: number;
@@ -32,7 +39,6 @@ storeScreenPricesRouter.get("/", async (req, res) => {
     active: boolean;
     price_cents: number;
     last_price_cents: number;
-    currency: string;
   }>(
     `
     SELECT
@@ -40,8 +46,7 @@ storeScreenPricesRouter.get("/", async (req, res) => {
       o.label,
       o.active,
       COALESCE(sp.price_cents, 0) AS price_cents,
-      COALESCE(sp.last_price_cents, 0) AS last_price_cents,
-      COALESCE(sp.currency, 'BRL') AS currency
+      COALESCE(sp.last_price_cents, 0) AS last_price_cents
     FROM screen_options o
     LEFT JOIN screen_option_prices_store sp
       ON sp.screen_option_id = o.id
@@ -49,28 +54,40 @@ storeScreenPricesRouter.get("/", async (req, res) => {
     WHERE o.model_id = $2
     ORDER BY o.active DESC, o.label ASC
     `,
-    [storeUser.storeId, modelId]
+    [storeId, modelId]
   );
 
-  return res.json({ ok: true, rows });
+  res.json({ ok: true, rows });
 });
 
-// POST /store/screen-prices/bulk
-// body: { modelId, items: [{ screenOptionId, priceCents, available }] }
+// POST /admin/screen-prices/bulk
+// body: { storeId, modelId, items: [{ screenOptionId, priceCents, available }] }
 // Rules:
-//  - available=false => price becomes 0 (unavailable)
+//  - available=false => price becomes 0
 //  - available=true  => priceCents must be > 0 (force user to set a price)
-storeScreenPricesRouter.post("/bulk", async (req, res) => {
-  const storeUser = (req as any).storeUser as { storeId: number };
+adminScreenPricesRouter.post("/bulk", async (req, res) => {
+  const storeId = Number(req.body?.storeId);
   const modelId = Number(req.body?.modelId);
   const items = Array.isArray(req.body?.items) ? req.body.items : [];
-  if (!Number.isFinite(modelId)) return res.status(400).json({ ok: false, error: "modelId_invalid" });
+  if (!Number.isFinite(storeId) || !Number.isFinite(modelId) || !Array.isArray(items)) {
+    return res.status(400).json({ ok: false, error: "Invalid payload" });
+  }
 
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
-    let updated = 0;
 
+    // Ensure store supports model (optional but consistent with admin/prices)
+    await client.query(
+      `
+      INSERT INTO store_models (store_id, model_id)
+      VALUES ($1, $2)
+      ON CONFLICT DO NOTHING
+      `,
+      [storeId, modelId]
+    );
+
+    let updated = 0;
     for (const it of items) {
       const screenOptionId = Number(it?.screenOptionId);
       if (!Number.isFinite(screenOptionId)) continue;
@@ -98,7 +115,7 @@ storeScreenPricesRouter.post("/bulk", async (req, res) => {
           ON CONFLICT (store_id, screen_option_id)
           DO UPDATE SET price_cents = 0
           `,
-          [storeUser.storeId, screenOptionId]
+          [storeId, screenOptionId]
         );
         updated++;
         continue;
@@ -119,16 +136,16 @@ storeScreenPricesRouter.post("/bulk", async (req, res) => {
                       last_price_cents = EXCLUDED.last_price_cents,
                       currency = 'BRL'
         `,
-        [storeUser.storeId, screenOptionId, priceCents]
+        [storeId, screenOptionId, priceCents]
       );
       updated++;
     }
 
     await client.query("COMMIT");
-    return res.json({ ok: true, updated });
-  } catch (_e: any) {
+    res.json({ ok: true, updated });
+  } catch (_e) {
     await client.query("ROLLBACK");
-    return res.status(500).json({ ok: false, error: "bulk_update_failed" });
+    res.status(500).json({ ok: false, error: "bulk_update_failed" });
   } finally {
     client.release();
   }

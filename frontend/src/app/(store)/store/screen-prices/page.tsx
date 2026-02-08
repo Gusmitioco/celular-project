@@ -11,7 +11,7 @@ export default function StoreScreenPricesPage() {
       </div>
 
       <h1 className="h2">Preços de tela</h1>
-      <p className="sub">Defina um override por loja (vazio = usar o preço padrão do admin)</p>
+      <p className="sub">Defina os preços da sua loja (toggle desligado = preço 0 / indisponível)</p>
 
       <StoreScreenPricesClient />
     </main>

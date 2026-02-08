@@ -34,10 +34,18 @@ export default function AdminHome() {
             <div className="chev">›</div>
           </Link>
 
+          <Link className="cardLink" href="/admin/screen-prices">
+            <div>
+              <div className="cardTitle">Preços de tela</div>
+              <div className="cardMeta">Editar preços de troca de tela por loja e modelo</div>
+            </div>
+            <div className="chev">›</div>
+          </Link>
+
           <Link className="cardLink" href="/admin/telas">
             <div>
               <div className="cardTitle">Telas</div>
-              <div className="cardMeta">Opções e preço padrão de troca de tela</div>
+              <div className="cardMeta">Cadastrar opções de tela por modelo</div>
             </div>
             <div className="chev">›</div>
           </Link>

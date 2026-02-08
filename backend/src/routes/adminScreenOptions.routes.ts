@@ -27,18 +27,13 @@ adminScreenOptionsRouter.get("/", async (req, res) => {
     id: number;
     label: string;
     active: boolean;
-    price_cents: number;
-    currency: string;
   }>(
     `
     SELECT
       o.id,
       o.label,
       o.active,
-      ap.price_cents,
-      ap.currency
     FROM screen_options o
-    JOIN screen_option_prices_admin ap ON ap.screen_option_id = o.id
     WHERE o.model_id = $1
     ORDER BY o.active DESC, o.label ASC
     `,
@@ -49,16 +44,14 @@ adminScreenOptionsRouter.get("/", async (req, res) => {
 });
 
 // POST /admin/screen-options
-// body: { modelId, label, priceCents, active? }
+// body: { modelId, label, active? }
 adminScreenOptionsRouter.post("/", async (req, res) => {
   const modelId = Number(req.body?.modelId);
   const label = String(req.body?.label ?? "").trim();
-  const priceCents = Number(req.body?.priceCents);
   const active = req.body?.active == null ? true : Boolean(req.body?.active);
 
   if (!Number.isFinite(modelId)) return res.status(400).json({ ok: false, error: "modelId_invalid" });
   if (!label) return res.status(400).json({ ok: false, error: "label_required" });
-  if (!Number.isFinite(priceCents) || priceCents < 0) return res.status(400).json({ ok: false, error: "price_invalid" });
 
   const client = await pool.connect();
   try {
@@ -70,11 +63,6 @@ adminScreenOptionsRouter.post("/", async (req, res) => {
       [modelId, label, active]
     );
     const id = Number(ins.rows[0]?.id);
-    await client.query(
-      `INSERT INTO screen_option_prices_admin (screen_option_id, price_cents, currency)
-       VALUES ($1, $2, 'BRL')`,
-      [id, priceCents]
-    );
     await client.query("COMMIT");
     return res.json({ ok: true, id });
   } catch (e: any) {
@@ -90,7 +78,7 @@ adminScreenOptionsRouter.post("/", async (req, res) => {
 });
 
 // POST /admin/screen-options/bulk
-// body: { modelId, items: [{ id, label, priceCents, active }] }
+// body: { modelId, items: [{ id, label, active }] }
 adminScreenOptionsRouter.post("/bulk", async (req, res) => {
   const modelId = Number(req.body?.modelId);
   const items = Array.isArray(req.body?.items) ? req.body.items : [];
@@ -107,7 +95,6 @@ adminScreenOptionsRouter.post("/bulk", async (req, res) => {
 
       const label = String(it?.label ?? "").trim();
       const active = it?.active == null ? undefined : Boolean(it?.active);
-      const priceCents = it?.priceCents == null ? undefined : Number(it.priceCents);
 
       if (label) {
         await client.query(
@@ -119,12 +106,6 @@ adminScreenOptionsRouter.post("/bulk", async (req, res) => {
         await client.query(
           `UPDATE screen_options SET active = $1 WHERE id = $2 AND model_id = $3`,
           [active, id, modelId]
-        );
-      }
-      if (priceCents !== undefined && Number.isFinite(priceCents) && priceCents >= 0) {
-        await client.query(
-          `UPDATE screen_option_prices_admin SET price_cents = $1, currency = 'BRL' WHERE screen_option_id = $2`,
-          [priceCents, id]
         );
       }
 
