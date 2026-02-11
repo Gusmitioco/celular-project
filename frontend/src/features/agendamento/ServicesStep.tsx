@@ -101,11 +101,12 @@ export function ServicesStep() {
         <div className="-mt-4 -mb-4 grid gap-4 md:grid-cols-2">
           {available.map((s) => {
             const selected = isSelected(s);
+            const isScreen = isScreenServiceName(s?.name);
             return (
               <ChoiceCard
                 key={s.id}
                 title={s.name}
-                subtitle={formatBRLFromCents(s.priceCents)}
+                subtitle={isScreen ? "Escolher tela" : formatBRLFromCents(s.priceCents)}
                 selected={selected}
                 onClick={() => toggleService(s)}
                 centerContent={false}
