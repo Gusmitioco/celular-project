@@ -47,6 +47,22 @@ export const heavyReadLimiter = rateLimit({
   message: { ok: false, error: "rate_limited" },
 });
 
+// Public request code lookup (GET /requests/public/:code)
+// Stricter than heavyReadLimiter to reduce code-guessing / enumeration.
+export const publicCodeLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 req/min/IP
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { ok: false, error: "rate_limited" },
+});
+
+export const publicCodeSlowdown = slowDown({
+  windowMs: 60 * 1000,
+  delayAfter: 10,
+  delayMs: () => 250,
+});
+
 // Creating requests (checkout confirm)
 export const createRequestLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes

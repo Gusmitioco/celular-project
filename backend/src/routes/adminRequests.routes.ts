@@ -1,6 +1,6 @@
 import { Router } from "express";
 import crypto from "crypto";
-import { requireAdmin } from "../middleware/adminAuth";
+import { requireAdmin } from "../middleware/adminAuth.js";
 import { query } from "../db.js";
 
 export const adminRequestsRouter = Router();

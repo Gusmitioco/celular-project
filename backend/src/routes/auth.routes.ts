@@ -6,8 +6,8 @@ import {
   requireCustomer,
   setCustomerSessionCookie,
   verifyPassword,
-} from "../auth/customerAuth";
-import { authLimiter, authSlowdown } from "../middleware/antiSpam";
+} from "../auth/customerAuth.js";
+import { authLimiter, authSlowdown } from "../middleware/antiSpam.js";
 
 export const authRouter = Router();
 

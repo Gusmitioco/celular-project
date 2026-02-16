@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { query, pool } from "../db.js";
-import { requireAdmin } from "../middleware/adminAuth";
+import { requireAdmin } from "../middleware/adminAuth.js";
 
 export const adminScreenOptionsRouter = Router();
 

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { query } from "../db.js";
-import { clearStoreSession, requireStoreUser, setStoreSessionCookie, verifyPassword } from "../auth/storeAuth";
-import { storeAuthLimiter, storeAuthSlowdown } from "../middleware/antiSpam";
+import { clearStoreSession, requireStoreUser, setStoreSessionCookie, verifyPassword } from "../auth/storeAuth.js";
+import { storeAuthLimiter, storeAuthSlowdown } from "../middleware/antiSpam.js";
 
 export const storeAuthRouter = Router();
 

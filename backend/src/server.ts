@@ -32,7 +32,7 @@ for (const p of candidates) {
 // - In dev (tsx), we can import the TS module.
 // - In prod (compiled), we need to import the JS module.
 try {
-  await import("./serverMain.ts");
+  await import("./serverMain.js");
 } catch {
   await import("./serverMain.js");
 }

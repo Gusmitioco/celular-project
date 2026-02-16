@@ -86,12 +86,50 @@ async function getCustomerFromToken(token: string): Promise<CustomerCtx | null> 
 export function initRealtime(server: http.Server) {
   if (_io) return _io;
 
-  const origin = process.env.CORS_ORIGIN ?? "http://localhost:3000";
 
-  const io = new Server(server, {
-    cors: { origin, credentials: true },
-    // default path is /socket.io
-  });
+const isProd = process.env.NODE_ENV === "production";
+const configuredOriginRaw = (process.env.CORS_ORIGIN ?? "").trim();
+const configuredOrigins = configuredOriginRaw
+  ? configuredOriginRaw.split(",").map((s) => s.trim()).filter(Boolean)
+  : [];
+
+function isAllowedDevOrigin(origin: string) {
+  try {
+    const u = new URL(origin);
+    const host = u.hostname;
+
+    if (host === "localhost" || host === "127.0.0.1" || host === "0.0.0.0") return true;
+    if (/^192\.168\./.test(host)) return true;
+    if (/^10\./.test(host)) return true;
+
+    const m = host.match(/^172\.(\d+)\./);
+    if (m) {
+      const second = Number(m[1]);
+      if (second >= 16 && second <= 31) return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
+}
+
+const corsOrigin = (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  if (!origin) return callback(null, true);
+
+  if (isProd) return callback(null, configuredOrigins.includes(origin));
+
+  if (configuredOrigins.length > 0) {
+    return callback(null, configuredOrigins.includes(origin) || isAllowedDevOrigin(origin));
+  }
+
+  return callback(null, isAllowedDevOrigin(origin));
+};
+
+const io = new Server(server, {
+  cors: { origin: corsOrigin, credentials: true },
+  // default path is /socket.io
+});
 
   io.use(async (socket, next) => {
     try {

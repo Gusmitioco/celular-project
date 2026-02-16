@@ -1,8 +1,8 @@
 import { Router } from "express";
 import crypto from "crypto";
-import { requireAdmin } from "../middleware/adminAuth";
+import { requireAdmin } from "../middleware/adminAuth.js";
 import { query } from "../db.js";
-import { hashPassword } from "../auth/storeAuth";
+import { hashPassword } from "../auth/storeAuth.js";
 
 export const adminStoresRouter = Router();
 

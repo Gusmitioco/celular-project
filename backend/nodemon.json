@@ -1,6 +1,6 @@
 {
-  "watch": ["src", "prisma"],
-  "ext": "ts,prisma",
+  "watch": ["src"],
+  "ext": "ts",
   "ignore": ["dist"],
   "exec": "node -r dotenv/config ./node_modules/ts-node/dist/bin.js src/server.ts"
 }

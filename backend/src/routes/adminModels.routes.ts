@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAdmin } from "../middleware/adminAuth";
+import { requireAdmin } from "../middleware/adminAuth.js";
 import { query } from "../db.js";
 
 export const adminModelsRouter = Router();

@@ -1,10 +1,10 @@
 import { Router } from "express";
 import crypto from "crypto";
 import { pool, query } from "../db.js";
-import { requireCustomer } from "../auth/customerAuth";
-import { chatLimiter, createRequestLimiter, heavyReadLimiter } from "../middleware/antiSpam";
-import { emitMessage, type RealtimeMessage } from "../realtime/io";
-import { slugify } from "../utils/slugify.ts";
+import { requireCustomer } from "../auth/customerAuth.js";
+import { chatLimiter, createRequestLimiter, heavyReadLimiter, publicCodeLimiter, publicCodeSlowdown } from "../middleware/antiSpam.js";
+import { emitMessage, type RealtimeMessage } from "../realtime/io.js";
+import { slugify } from "../utils/slugify.js";
 
 export const requestsRouter = Router();
 
@@ -131,10 +131,34 @@ async function pickStoreForRequest(args: {
 }
 
 function makeCode() {
-  // Example: TFX-1A2B3C
-  const raw = crypto.randomBytes(4).toString("hex").toUpperCase(); // 8 chars
-  return `TFX-${raw.slice(0, 6)}`;
+  // Human-friendly short code (Crockford Base32, avoids I/L/O/U confusion)
+  // Example: TFX-7K3M9P2D
+  const ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+  const LENGTH = 5; // change to 6 if you really want it shorter (less secure)
+
+  // Generate enough random bytes and map 5-bit chunks to Base32 chars.
+  const bytes = crypto.randomBytes(16);
+  let bits = 0;
+  let value = 0;
+  let out = "";
+
+  for (const b of bytes) {
+    value = (value << 8) | b;
+    bits += 8;
+    while (bits >= 5 && out.length < LENGTH) {
+      const idx = (value >> (bits - 5)) & 31;
+      out += ALPHABET[idx];
+      bits -= 5;
+    }
+    if (out.length >= LENGTH) break;
+  }
+
+  // Fallback (extremely unlikely) if not enough bits consumed for LENGTH
+  while (out.length < LENGTH) out += ALPHABET[crypto.randomInt(0, 32)];
+
+  return `TFX-${out}`;
 }
+
 
 /**
  * Fingerprint used to avoid creating duplicate "created" requests for a customer.
@@ -675,7 +699,7 @@ requestsRouter.post("/public", requireCustomer, createRequestLimiter, async (req
  * GET /requests/public/:code
  * Public request lookup for the confirmation screen.
  */
-requestsRouter.get("/public/:code", heavyReadLimiter, async (req, res) => {
+requestsRouter.get("/public/:code", publicCodeLimiter, publicCodeSlowdown, async (req, res) => {
   const code = String(req.params.code ?? "").trim();
   if (!code) return res.status(400).json({ ok: false, error: "code_required" });
 

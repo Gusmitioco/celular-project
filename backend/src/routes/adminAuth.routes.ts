@@ -1,6 +1,6 @@
 import { Router } from "express";
 import jwt from "jsonwebtoken";
-import { requireAdmin } from "../middleware/adminAuth.ts";
+import { requireAdmin } from "../middleware/adminAuth.js";
 
 export const adminAuthRouter = Router();
 
@@ -27,7 +27,7 @@ adminAuthRouter.post("/login", (req, res) => {
   // httpOnly cookie so JS can’t read it
   res.cookie("admin_token", token, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "strict",
     secure: isProd,
     path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,

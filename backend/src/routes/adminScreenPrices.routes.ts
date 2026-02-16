@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { pool, query } from "../db.js";
-import { requireAdmin } from "../middleware/adminAuth";
+import { requireAdmin } from "../middleware/adminAuth.js";
 
 // Admin can set screen option prices per store (similar to /admin/prices)
 // price_cents = 0 => unavailable

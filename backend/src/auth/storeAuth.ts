@@ -4,7 +4,7 @@ import { query } from "../db.js";
 
 // Reuse the same password hashing helpers you already use for customers.
 // If your project has them in a different file, change this import path.
-import { hashPassword, verifyPassword } from "./customerAuth";
+import { hashPassword, verifyPassword } from "./customerAuth.js";
 
 const STORE_COOKIE = "store_session";
 const SESSION_DAYS = 30;
@@ -32,7 +32,7 @@ export async function setStoreSessionCookie(res: Response, storeUserId: number) 
 
   res.cookie(STORE_COOKIE, token, {
     httpOnly: true,
-    sameSite: "lax",
+    sameSite: "strict",
     secure: isProd,
     expires: expiresAt,
     // also set maxAge for compatibility

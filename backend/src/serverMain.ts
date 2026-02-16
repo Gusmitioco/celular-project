@@ -16,6 +16,47 @@ const app = express();
 const isProd = process.env.NODE_ENV === "production";
 const isDev = !isProd;
 
+function isWeakPassword(pw: string) {
+  const s = (pw ?? "").trim();
+  if (s.length < 10) return true;
+  const lowered = s.toLowerCase();
+  const common = new Set([
+    "12345",
+    "123456",
+    "12345678",
+    "password",
+    "senha",
+    "admin",
+    "owner",
+    "qwerty",
+  ]);
+  if (common.has(lowered)) return true;
+  return false;
+}
+
+function validateProductionSecrets() {
+  if (process.env.NODE_ENV !== "production") return;
+
+  const adminPass = String(process.env.ADMIN_PASS ?? "");
+  const adminSecret = String(process.env.ADMIN_JWT_SECRET ?? "");
+
+  if (!adminPass || !adminSecret) {
+    throw new Error("Missing ADMIN_PASS / ADMIN_JWT_SECRET in production environment");
+  }
+
+  if (isWeakPassword(adminPass)) {
+    throw new Error("ADMIN_PASS is too weak for production (use a stronger password)");
+  }
+
+  // JWT secret should be long and random (32+ chars minimum).
+  if (adminSecret.trim().length < 32) {
+    throw new Error("ADMIN_JWT_SECRET is too short for production (use 32+ random chars)");
+  }
+}
+
+validateProductionSecrets();
+
+
 // --- CORS (must run BEFORE any limiter so preflight gets headers) ---
 // In production we fail-closed unless CORS_ORIGIN is provided.
 // In development we allow localhost/127.0.0.1/0.0.0.0 and private LAN IPs by default.

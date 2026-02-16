@@ -1,8 +1,8 @@
 import { Router } from "express";
 import { query } from "../db.js";
-import { requireStoreUser } from "../auth/storeAuth";
-import { storeChatLimiter, storeHeavyReadLimiter } from "../middleware/antiSpam";
-import { emitMessage, type RealtimeMessage } from "../realtime/io";
+import { requireStoreUser } from "../auth/storeAuth.js";
+import { storeChatLimiter, storeHeavyReadLimiter } from "../middleware/antiSpam.js";
+import { emitMessage, type RealtimeMessage } from "../realtime/io.js";
 
 export const storeRequestsRouter = Router();
 

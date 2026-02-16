@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { query } from "../db.js";
-import { slugify } from "../utils/slugify.ts";
-import { heavyReadLimiter } from "../middleware/antiSpam";
+import { slugify } from "../utils/slugify.js";
+import { heavyReadLimiter } from "../middleware/antiSpam.js";
 
 export const servicesRouter = Router();
 
