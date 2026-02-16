@@ -1,11 +1,17 @@
-## TechFix database init
+# Database scripts
 
-If this folder is mounted into Postgres at `/docker-entrypoint-initdb.d`, the `.sql` files run in alphabetical order **only when the database volume is empty**.
+These SQL files are executed in order (00_*, 01_*, ...).
 
-Order:
-1. `00_schema.sql`
-2. `01_seed.sql`
-3. `02_customer_auth.sql`
-4. `03_requests.sql`
+## Dev reset (Docker)
+If you're using Postgres with a persistent volume, init scripts run **only when the DB is created**.
+To fully re-run schema + seed:
 
-If you already have data, apply new files manually with `psql -f`.
+- `docker compose down -v`
+- `docker compose up --build -d`
+
+## Seed contents
+- 1 store: ConSERTE FACIL (Teixeira de Freitas)
+- Multiple models (includes iPhones from the screen price list)
+- Services priced for testing
+- Screen replacement prices come from `16_seed_iphone_screens.sql` (per-store).
+

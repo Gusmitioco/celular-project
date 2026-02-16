@@ -146,7 +146,7 @@ export function ScreenStep() {
 
         {!loading && rows.length === 0 && (
           <div className="rounded-lg border border-white/10 bg-white/5 p-4 text-sm text-white/80">
-            Nenhuma opÃ§Ã£o de tela disponÃ­vel para este modelo.
+            Nenhuma opção de tela disponi­vel para este modelo.
           </div>
         )}
 
