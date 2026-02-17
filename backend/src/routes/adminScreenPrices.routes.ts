@@ -107,15 +107,20 @@ adminScreenPricesRouter.post("/bulk", async (req, res) => {
       }
 
       if (!available) {
-        // Turn off -> price 0, preserve last_price_cents as-is
+        // Turn off -> price 0, but keep (or update) last_price_cents when a price was provided
+        const last = priceCents > 0 ? priceCents : 0;
         await client.query(
           `
           INSERT INTO screen_option_prices_store (store_id, screen_option_id, price_cents, last_price_cents, currency)
-          VALUES ($1, $2, 0, 0, 'BRL')
+          VALUES ($1, $2, 0, $3, 'BRL')
           ON CONFLICT (store_id, screen_option_id)
-          DO UPDATE SET price_cents = 0
+          DO UPDATE SET price_cents = 0,
+                        last_price_cents = CASE
+                          WHEN EXCLUDED.last_price_cents > 0 THEN EXCLUDED.last_price_cents
+                          ELSE screen_option_prices_store.last_price_cents
+                        END
           `,
-          [storeId, screenOptionId]
+          [storeId, screenOptionId, last]
         );
         updated++;
         continue;

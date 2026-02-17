@@ -159,7 +159,7 @@ export function StoreScreenPricesClient() {
   function setAvailability(id: number, next: boolean) {
     setEditAvailable((prev) => ({ ...prev, [id]: next }));
     if (!next) {
-      setEditPrice((prev) => ({ ...prev, [id]: "" }));
+      // Keep the typed price so it can be restored later
       return;
     }
     setEditPrice((prev) => ({ ...prev, [id]: (prev[id] ?? "").trim() }));
@@ -186,7 +186,7 @@ export function StoreScreenPricesClient() {
     const items = dirtyIds.map((id) => {
       const available = !!editAvailable[id];
       const cents = brlToCents(editPrice[id] ?? "") ?? 0;
-      return { screenOptionId: id, available, priceCents: available ? cents : 0 };
+      return { screenOptionId: id, available, priceCents: cents };
     });
 
     const res = await fetch(`${apiBaseUrl}/api/store/screen-prices/bulk`, {

@@ -1,88 +1,71 @@
--- TechFix seed (dev)
---  - 1 loja
---  - Vários modelos (inclui iPhones da lista de telas)
---  - Serviços com preços aproximados (exceto Troca de Tela; preços vêm de screen_option_prices_store)
+-- ConSERTE FACIL seed (expanded demo data)
 
-BEGIN;
+-- Stores
 INSERT INTO stores (name, city, address)
-VALUES ('ConSERTE FACIL', 'Teixeira de Freitas', 'Rua Centro, 333 - Colina Verde')
+VALUES
+  -- MVP city pre-defined: Teixeira de Freitas (single-city launch)
+  ('ConSERTE FACIL', 'Teixeira de Freitas', 'Rua Centro, 333 - Colina Verde')
 ON CONFLICT DO NOTHING;
 
+
+
+-- Brands
 INSERT INTO brands (name) VALUES
-  ('Motorola'),
+  ('Apple'),
   ('Samsung'),
+  ('Motorola'),
   ('Xiaomi'),
-  ('iPhone')
+  ('Google'),
+  ('OnePlus'),
+  ('ASUS'),
+  ('Huawei')
 ON CONFLICT (name) DO NOTHING;
 
 -- Models
-WITH raw(brand_name, model_name) AS (
-  VALUES
-  ('iPhone', 'iPhone 5'),
-  ('iPhone', 'iPhone 6S'),
-  ('iPhone', 'iPhone 6 Plus'),
-  ('iPhone', 'iPhone 6'),
-  ('iPhone', 'iPhone 6S Plus'),
-  ('iPhone', 'iPhone 7'),
-  ('iPhone', 'iPhone 7 Plus'),
-  ('iPhone', 'iPhone 8 Plus'),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)'),
-  ('iPhone', 'iPhone XR'),
-  ('iPhone', 'iPhone XS Max'),
-  ('iPhone', 'iPhone XS'),
-  ('iPhone', 'iPhone X'),
-  ('iPhone', 'iPhone 11 Pro Max'),
-  ('iPhone', 'iPhone 11 Pro'),
-  ('iPhone', 'iPhone 11'),
-  ('iPhone', 'iPhone 12 Mini'),
-  ('iPhone', 'iPhone 12 Pro'),
-  ('iPhone', 'iPhone 12'),
-  ('iPhone', 'iPhone 12 Pro Max'),
-  ('iPhone', 'iPhone 13 Pro'),
-  ('iPhone', 'iPhone 13'),
-  ('iPhone', 'iPhone 13 Mini'),
-  ('iPhone', 'iPhone 13 Pro Max'),
-  ('iPhone', 'iPhone 14 Pro'),
-  ('iPhone', 'iPhone 14'),
-  ('iPhone', 'iPhone 14 Pro Max'),
-  ('iPhone', 'iPhone 14 Plus'),
-  ('iPhone', 'iPhone 15'),
-  ('iPhone', 'iPhone 15 Pro'),
-  ('iPhone', 'iPhone 15 Plus'),
-  ('iPhone', 'iPhone 15 Pro Max'),
-  ('iPhone', 'iPhone 16 Plus'),
-  ('iPhone', 'iPhone 16 Pro Max'),
-  ('iPhone', 'iPhone 16 Pro'),
-  ('iPhone', 'iPhone 16'),
+INSERT INTO models (brand_id, name)
+SELECT b.id, v.model_name
+FROM (VALUES
+  -- Samsung
+  ('Samsung', 'Galaxy S24 Ultra'),
   ('Samsung', 'Galaxy S23'),
   ('Samsung', 'Galaxy A54'),
+  ('Samsung', 'Galaxy Z Flip 5'),
+  ('Samsung', 'Galaxy S22'),
+
+  -- Apple
+  ('Apple', 'iPhone 15 Pro'),
+  ('Apple', 'iPhone 14'),
+  ('Apple', 'iPhone 13'),
+  ('Apple', 'iPhone 12'),
+
+  -- Motorola
   ('Motorola', 'Moto G84'),
-  ('Xiaomi', 'Redmi Note 13')
-)
-INSERT INTO models (brand_id, name)
-SELECT b.id, r.model_name
-FROM raw r
-JOIN brands b ON b.name = r.brand_name
+  ('Motorola', 'Moto G73'),
+  ('Motorola', 'Moto Edge 40'),
+
+  -- Xiaomi
+  ('Xiaomi', 'Redmi Note 13'),
+  ('Xiaomi', 'Redmi Note 12'),
+  ('Xiaomi', 'Poco X5'),
+
+  -- Google
+  ('Google', 'Pixel 8'),
+  ('Google', 'Pixel 7'),
+
+  -- OnePlus
+  ('OnePlus', 'OnePlus 12'),
+  ('OnePlus', 'OnePlus 11'),
+
+  -- ASUS
+  ('ASUS', 'ROG Phone 7'),
+
+  -- Huawei
+  ('Huawei', 'P50 Pro')
+) AS v(brand_name, model_name)
+JOIN brands b ON b.name = v.brand_name
 ON CONFLICT (brand_id, name) DO NOTHING;
 
--- Store supports models
-WITH store_row AS (
-  SELECT id AS store_id FROM stores WHERE name = 'ConSERTE FACIL' LIMIT 1
-),
-model_rows AS (
-  SELECT m.id AS model_id
-  FROM models m
-  JOIN brands b ON b.id = m.brand_id
-  WHERE (b.name, m.name) IN (
-    ('iPhone', 'iPhone 5'), ('iPhone', 'iPhone 6S'), ('iPhone', 'iPhone 6 Plus'), ('iPhone', 'iPhone 6'), ('iPhone', 'iPhone 6S Plus'), ('iPhone', 'iPhone 7'), ('iPhone', 'iPhone 7 Plus'), ('iPhone', 'iPhone 8 Plus'), ('iPhone', 'iPhone 8 / SE (2ª geração)'), ('iPhone', 'iPhone XR'), ('iPhone', 'iPhone XS Max'), ('iPhone', 'iPhone XS'), ('iPhone', 'iPhone X'), ('iPhone', 'iPhone 11 Pro Max'), ('iPhone', 'iPhone 11 Pro'), ('iPhone', 'iPhone 11'), ('iPhone', 'iPhone 12 Mini'), ('iPhone', 'iPhone 12 Pro'), ('iPhone', 'iPhone 12'), ('iPhone', 'iPhone 12 Pro Max'), ('iPhone', 'iPhone 13 Pro'), ('iPhone', 'iPhone 13'), ('iPhone', 'iPhone 13 Mini'), ('iPhone', 'iPhone 13 Pro Max'), ('iPhone', 'iPhone 14 Pro'), ('iPhone', 'iPhone 14'), ('iPhone', 'iPhone 14 Pro Max'), ('iPhone', 'iPhone 14 Plus'), ('iPhone', 'iPhone 15'), ('iPhone', 'iPhone 15 Pro'), ('iPhone', 'iPhone 15 Plus'), ('iPhone', 'iPhone 15 Pro Max'), ('iPhone', 'iPhone 16 Plus'), ('iPhone', 'iPhone 16 Pro Max'), ('iPhone', 'iPhone 16 Pro'), ('iPhone', 'iPhone 16'), ('Samsung', 'Galaxy S23'), ('Samsung', 'Galaxy A54'), ('Motorola', 'Moto G84'), ('Xiaomi', 'Redmi Note 13')
-  )
-)
-INSERT INTO store_models (store_id, model_id)
-SELECT s.store_id, m.model_id
-FROM store_row s CROSS JOIN model_rows m
-ON CONFLICT DO NOTHING;
-
--- Services
+-- Services (expanded)
 INSERT INTO services (name) VALUES
   ('Troca de Tela'),
   ('Troca de Bateria'),
@@ -99,546 +82,162 @@ INSERT INTO services (name) VALUES
   ('Diagnóstico')
 ON CONFLICT (name) DO NOTHING;
 
--- Service prices per store+model
-WITH
-store_row AS (
-  SELECT id AS store_id FROM stores WHERE name = 'ConSERTE FACIL' LIMIT 1
-),
-raw(brand_name, model_name, service_name, price_cents, notes) AS (
-  VALUES
-  ('iPhone', 'iPhone 5', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 5', 'Troca de Bateria', 12600, NULL),
-  ('iPhone', 'iPhone 5', 'Reparo de Conector de Carga', 9700, NULL),
-  ('iPhone', 'iPhone 5', 'Troca de Alto-falante', 8700, NULL),
-  ('iPhone', 'iPhone 5', 'Troca de Câmera Traseira', 14500, NULL),
-  ('iPhone', 'iPhone 5', 'Troca de Câmera Frontal', 12500, NULL),
-  ('iPhone', 'iPhone 5', 'Reparo de Placa', 24300, NULL),
-  ('iPhone', 'iPhone 5', 'Troca de Microfone', 9700, NULL),
-  ('iPhone', 'iPhone 5', 'Troca de Botões', 8700, NULL),
-  ('iPhone', 'iPhone 5', 'Troca de Vidro Traseiro', 17400, NULL),
-  ('iPhone', 'iPhone 5', 'Reparo Face ID / Biometria', 16000, NULL),
-  ('iPhone', 'iPhone 5', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 5', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 6S', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 6S', 'Troca de Bateria', 13000, NULL),
-  ('iPhone', 'iPhone 6S', 'Reparo de Conector de Carga', 10000, NULL),
-  ('iPhone', 'iPhone 6S', 'Troca de Alto-falante', 9000, NULL),
-  ('iPhone', 'iPhone 6S', 'Troca de Câmera Traseira', 15000, NULL),
-  ('iPhone', 'iPhone 6S', 'Troca de Câmera Frontal', 13000, NULL),
-  ('iPhone', 'iPhone 6S', 'Reparo de Placa', 25000, NULL),
-  ('iPhone', 'iPhone 6S', 'Troca de Microfone', 10000, NULL),
-  ('iPhone', 'iPhone 6S', 'Troca de Botões', 9000, NULL),
-  ('iPhone', 'iPhone 6S', 'Troca de Vidro Traseiro', 18000, NULL),
-  ('iPhone', 'iPhone 6S', 'Reparo Face ID / Biometria', 16800, NULL),
-  ('iPhone', 'iPhone 6S', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 6S', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 6 Plus', 'Troca de Bateria', 13000, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Reparo de Conector de Carga', 10000, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Troca de Alto-falante', 9000, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Troca de Câmera Traseira', 15000, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Troca de Câmera Frontal', 13000, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Reparo de Placa', 25000, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Troca de Microfone', 10000, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Troca de Botões', 9000, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Troca de Vidro Traseiro', 18000, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Reparo Face ID / Biometria', 16800, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 6 Plus', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 6', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 6', 'Troca de Bateria', 13000, NULL),
-  ('iPhone', 'iPhone 6', 'Reparo de Conector de Carga', 10000, NULL),
-  ('iPhone', 'iPhone 6', 'Troca de Alto-falante', 9000, NULL),
-  ('iPhone', 'iPhone 6', 'Troca de Câmera Traseira', 15000, NULL),
-  ('iPhone', 'iPhone 6', 'Troca de Câmera Frontal', 13000, NULL),
-  ('iPhone', 'iPhone 6', 'Reparo de Placa', 25000, NULL),
-  ('iPhone', 'iPhone 6', 'Troca de Microfone', 10000, NULL),
-  ('iPhone', 'iPhone 6', 'Troca de Botões', 9000, NULL),
-  ('iPhone', 'iPhone 6', 'Troca de Vidro Traseiro', 18000, NULL),
-  ('iPhone', 'iPhone 6', 'Reparo Face ID / Biometria', 16800, NULL),
-  ('iPhone', 'iPhone 6', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 6', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 6S Plus', 'Troca de Bateria', 13000, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Reparo de Conector de Carga', 10000, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Troca de Alto-falante', 9000, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Troca de Câmera Traseira', 15000, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Troca de Câmera Frontal', 13000, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Reparo de Placa', 25000, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Troca de Microfone', 10000, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Troca de Botões', 9000, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Troca de Vidro Traseiro', 18000, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Reparo Face ID / Biometria', 16800, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 6S Plus', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 7', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 7', 'Troca de Bateria', 13400, NULL),
-  ('iPhone', 'iPhone 7', 'Reparo de Conector de Carga', 10300, NULL),
-  ('iPhone', 'iPhone 7', 'Troca de Alto-falante', 9200, NULL),
-  ('iPhone', 'iPhone 7', 'Troca de Câmera Traseira', 15500, NULL),
-  ('iPhone', 'iPhone 7', 'Troca de Câmera Frontal', 13400, NULL),
-  ('iPhone', 'iPhone 7', 'Reparo de Placa', 25700, NULL),
-  ('iPhone', 'iPhone 7', 'Troca de Microfone', 10300, NULL),
-  ('iPhone', 'iPhone 7', 'Troca de Botões', 9200, NULL),
-  ('iPhone', 'iPhone 7', 'Troca de Vidro Traseiro', 18600, NULL),
-  ('iPhone', 'iPhone 7', 'Reparo Face ID / Biometria', 17600, NULL),
-  ('iPhone', 'iPhone 7', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 7', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 7 Plus', 'Troca de Bateria', 13400, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Reparo de Conector de Carga', 10300, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Troca de Alto-falante', 9200, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Troca de Câmera Traseira', 15500, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Troca de Câmera Frontal', 13400, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Reparo de Placa', 25700, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Troca de Microfone', 10300, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Troca de Botões', 9200, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Troca de Vidro Traseiro', 18600, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Reparo Face ID / Biometria', 17600, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 7 Plus', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 8 Plus', 'Troca de Bateria', 13800, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Reparo de Conector de Carga', 10600, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Troca de Alto-falante', 9500, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Troca de Câmera Traseira', 16000, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Troca de Câmera Frontal', 13900, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Reparo de Placa', 26400, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Troca de Microfone', 10600, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Troca de Botões', 9500, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Troca de Vidro Traseiro', 19200, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Reparo Face ID / Biometria', 18400, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 8 Plus', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Troca de Bateria', 13800, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Reparo de Conector de Carga', 10600, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Troca de Alto-falante', 9500, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Troca de Câmera Traseira', 16000, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Troca de Câmera Frontal', 13900, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Reparo de Placa', 26400, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Troca de Microfone', 10600, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Troca de Botões', 9500, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Troca de Vidro Traseiro', 19200, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Reparo Face ID / Biometria', 18400, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 8 / SE (2ª geração)', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone XR', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone XR', 'Troca de Bateria', 14600, NULL),
-  ('iPhone', 'iPhone XR', 'Reparo de Conector de Carga', 11200, NULL),
-  ('iPhone', 'iPhone XR', 'Troca de Alto-falante', 10000, NULL),
-  ('iPhone', 'iPhone XR', 'Troca de Câmera Traseira', 17000, NULL),
-  ('iPhone', 'iPhone XR', 'Troca de Câmera Frontal', 14800, NULL),
-  ('iPhone', 'iPhone XR', 'Reparo de Placa', 27800, NULL),
-  ('iPhone', 'iPhone XR', 'Troca de Microfone', 11200, NULL),
-  ('iPhone', 'iPhone XR', 'Troca de Botões', 10000, NULL),
-  ('iPhone', 'iPhone XR', 'Troca de Vidro Traseiro', 20400, NULL),
-  ('iPhone', 'iPhone XR', 'Reparo Face ID / Biometria', 20000, NULL),
-  ('iPhone', 'iPhone XR', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone XR', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone XS Max', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone XS Max', 'Troca de Bateria', 16600, NULL),
-  ('iPhone', 'iPhone XS Max', 'Reparo de Conector de Carga', 12700, NULL),
-  ('iPhone', 'iPhone XS Max', 'Troca de Alto-falante', 11000, NULL),
-  ('iPhone', 'iPhone XS Max', 'Troca de Câmera Traseira', 20000, NULL),
-  ('iPhone', 'iPhone XS Max', 'Troca de Câmera Frontal', 17300, NULL),
-  ('iPhone', 'iPhone XS Max', 'Reparo de Placa', 32800, NULL),
-  ('iPhone', 'iPhone XS Max', 'Troca de Microfone', 12400, NULL),
-  ('iPhone', 'iPhone XS Max', 'Troca de Botões', 11200, NULL),
-  ('iPhone', 'iPhone XS Max', 'Troca de Vidro Traseiro', 24400, NULL),
-  ('iPhone', 'iPhone XS Max', 'Reparo Face ID / Biometria', 25000, NULL),
-  ('iPhone', 'iPhone XS Max', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone XS Max', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone XS', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone XS', 'Troca de Bateria', 14600, NULL),
-  ('iPhone', 'iPhone XS', 'Reparo de Conector de Carga', 11200, NULL),
-  ('iPhone', 'iPhone XS', 'Troca de Alto-falante', 10000, NULL),
-  ('iPhone', 'iPhone XS', 'Troca de Câmera Traseira', 17000, NULL),
-  ('iPhone', 'iPhone XS', 'Troca de Câmera Frontal', 14800, NULL),
-  ('iPhone', 'iPhone XS', 'Reparo de Placa', 27800, NULL),
-  ('iPhone', 'iPhone XS', 'Troca de Microfone', 11200, NULL),
-  ('iPhone', 'iPhone XS', 'Troca de Botões', 10000, NULL),
-  ('iPhone', 'iPhone XS', 'Troca de Vidro Traseiro', 20400, NULL),
-  ('iPhone', 'iPhone XS', 'Reparo Face ID / Biometria', 20000, NULL),
-  ('iPhone', 'iPhone XS', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone XS', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone X', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone X', 'Troca de Bateria', 14600, NULL),
-  ('iPhone', 'iPhone X', 'Reparo de Conector de Carga', 11200, NULL),
-  ('iPhone', 'iPhone X', 'Troca de Alto-falante', 10000, NULL),
-  ('iPhone', 'iPhone X', 'Troca de Câmera Traseira', 17000, NULL),
-  ('iPhone', 'iPhone X', 'Troca de Câmera Frontal', 14800, NULL),
-  ('iPhone', 'iPhone X', 'Reparo de Placa', 27800, NULL),
-  ('iPhone', 'iPhone X', 'Troca de Microfone', 11200, NULL),
-  ('iPhone', 'iPhone X', 'Troca de Botões', 10000, NULL),
-  ('iPhone', 'iPhone X', 'Troca de Vidro Traseiro', 20400, NULL),
-  ('iPhone', 'iPhone X', 'Reparo Face ID / Biometria', 20000, NULL),
-  ('iPhone', 'iPhone X', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone X', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 11 Pro Max', 'Troca de Bateria', 17000, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Reparo de Conector de Carga', 13000, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Troca de Alto-falante', 11200, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Troca de Câmera Traseira', 20500, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Troca de Câmera Frontal', 17700, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Reparo de Placa', 33500, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Troca de Microfone', 12700, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Troca de Botões', 11400, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Troca de Vidro Traseiro', 25000, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Reparo Face ID / Biometria', 25800, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 11 Pro Max', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 11 Pro', 'Troca de Bateria', 17000, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Reparo de Conector de Carga', 13000, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Troca de Alto-falante', 11200, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Troca de Câmera Traseira', 20500, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Troca de Câmera Frontal', 17700, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Reparo de Placa', 33500, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Troca de Microfone', 12700, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Troca de Botões', 11400, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Troca de Vidro Traseiro', 25000, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Reparo Face ID / Biometria', 25800, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 11 Pro', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 11', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 11', 'Troca de Bateria', 15000, NULL),
-  ('iPhone', 'iPhone 11', 'Reparo de Conector de Carga', 11500, NULL),
-  ('iPhone', 'iPhone 11', 'Troca de Alto-falante', 10200, NULL),
-  ('iPhone', 'iPhone 11', 'Troca de Câmera Traseira', 17500, NULL),
-  ('iPhone', 'iPhone 11', 'Troca de Câmera Frontal', 15200, NULL),
-  ('iPhone', 'iPhone 11', 'Reparo de Placa', 28500, NULL),
-  ('iPhone', 'iPhone 11', 'Troca de Microfone', 11500, NULL),
-  ('iPhone', 'iPhone 11', 'Troca de Botões', 10200, NULL),
-  ('iPhone', 'iPhone 11', 'Troca de Vidro Traseiro', 21000, NULL),
-  ('iPhone', 'iPhone 11', 'Reparo Face ID / Biometria', 20800, NULL),
-  ('iPhone', 'iPhone 11', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 11', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 12 Mini', 'Troca de Bateria', 15400, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Reparo de Conector de Carga', 11800, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Troca de Alto-falante', 10500, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Troca de Câmera Traseira', 18000, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Troca de Câmera Frontal', 15700, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Reparo de Placa', 29200, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Troca de Microfone', 11800, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Troca de Botões', 10500, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Troca de Vidro Traseiro', 21600, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Reparo Face ID / Biometria', 21600, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 12 Mini', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 12 Pro', 'Troca de Bateria', 17400, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Reparo de Conector de Carga', 13300, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Troca de Alto-falante', 11500, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Troca de Câmera Traseira', 21000, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Troca de Câmera Frontal', 18200, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Reparo de Placa', 34200, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Troca de Microfone', 13000, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Troca de Botões', 11700, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Troca de Vidro Traseiro', 25600, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Reparo Face ID / Biometria', 26600, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 12 Pro', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 12', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 12', 'Troca de Bateria', 15400, NULL),
-  ('iPhone', 'iPhone 12', 'Reparo de Conector de Carga', 11800, NULL),
-  ('iPhone', 'iPhone 12', 'Troca de Alto-falante', 10500, NULL),
-  ('iPhone', 'iPhone 12', 'Troca de Câmera Traseira', 18000, NULL),
-  ('iPhone', 'iPhone 12', 'Troca de Câmera Frontal', 15700, NULL),
-  ('iPhone', 'iPhone 12', 'Reparo de Placa', 29200, NULL),
-  ('iPhone', 'iPhone 12', 'Troca de Microfone', 11800, NULL),
-  ('iPhone', 'iPhone 12', 'Troca de Botões', 10500, NULL),
-  ('iPhone', 'iPhone 12', 'Troca de Vidro Traseiro', 21600, NULL),
-  ('iPhone', 'iPhone 12', 'Reparo Face ID / Biometria', 21600, NULL),
-  ('iPhone', 'iPhone 12', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 12', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 12 Pro Max', 'Troca de Bateria', 17400, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Reparo de Conector de Carga', 13300, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Troca de Alto-falante', 11500, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Troca de Câmera Traseira', 21000, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Troca de Câmera Frontal', 18200, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Reparo de Placa', 34200, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Troca de Microfone', 13000, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Troca de Botões', 11700, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Troca de Vidro Traseiro', 25600, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Reparo Face ID / Biometria', 26600, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 12 Pro Max', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 13 Pro', 'Troca de Bateria', 17800, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Reparo de Conector de Carga', 13600, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Troca de Alto-falante', 11700, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Troca de Câmera Traseira', 21500, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Troca de Câmera Frontal', 18600, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Reparo de Placa', 34900, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Troca de Microfone', 13300, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Troca de Botões', 11900, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Troca de Vidro Traseiro', 26200, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Reparo Face ID / Biometria', 27400, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 13 Pro', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 13', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 13', 'Troca de Bateria', 15800, NULL),
-  ('iPhone', 'iPhone 13', 'Reparo de Conector de Carga', 12100, NULL),
-  ('iPhone', 'iPhone 13', 'Troca de Alto-falante', 10700, NULL),
-  ('iPhone', 'iPhone 13', 'Troca de Câmera Traseira', 18500, NULL),
-  ('iPhone', 'iPhone 13', 'Troca de Câmera Frontal', 16100, NULL),
-  ('iPhone', 'iPhone 13', 'Reparo de Placa', 29900, NULL),
-  ('iPhone', 'iPhone 13', 'Troca de Microfone', 12100, NULL),
-  ('iPhone', 'iPhone 13', 'Troca de Botões', 10700, NULL),
-  ('iPhone', 'iPhone 13', 'Troca de Vidro Traseiro', 22200, NULL),
-  ('iPhone', 'iPhone 13', 'Reparo Face ID / Biometria', 22400, NULL),
-  ('iPhone', 'iPhone 13', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 13', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 13 Mini', 'Troca de Bateria', 15800, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Reparo de Conector de Carga', 12100, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Troca de Alto-falante', 10700, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Troca de Câmera Traseira', 18500, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Troca de Câmera Frontal', 16100, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Reparo de Placa', 29900, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Troca de Microfone', 12100, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Troca de Botões', 10700, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Troca de Vidro Traseiro', 22200, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Reparo Face ID / Biometria', 22400, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Desoxidação (líquido)', 12000, NULL),
-  ('iPhone', 'iPhone 13 Mini', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 13 Pro Max', 'Troca de Bateria', 17800, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Reparo de Conector de Carga', 13600, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Troca de Alto-falante', 11700, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Troca de Câmera Traseira', 21500, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Troca de Câmera Frontal', 18600, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Reparo de Placa', 34900, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Troca de Microfone', 13300, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Troca de Botões', 11900, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Troca de Vidro Traseiro', 26200, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Reparo Face ID / Biometria', 27400, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 13 Pro Max', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 14 Pro', 'Troca de Bateria', 20200, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Reparo de Conector de Carga', 15400, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Troca de Alto-falante', 13000, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Troca de Câmera Traseira', 25000, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Troca de Câmera Frontal', 21600, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Reparo de Placa', 40600, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Troca de Microfone', 14800, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Troca de Botões', 13400, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Troca de Vidro Traseiro', 30800, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Reparo Face ID / Biometria', 33200, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Desoxidação (líquido)', 16000, NULL),
-  ('iPhone', 'iPhone 14 Pro', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 14', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 14', 'Troca de Bateria', 18200, NULL),
-  ('iPhone', 'iPhone 14', 'Reparo de Conector de Carga', 13900, NULL),
-  ('iPhone', 'iPhone 14', 'Troca de Alto-falante', 12000, NULL),
-  ('iPhone', 'iPhone 14', 'Troca de Câmera Traseira', 22000, NULL),
-  ('iPhone', 'iPhone 14', 'Troca de Câmera Frontal', 19100, NULL),
-  ('iPhone', 'iPhone 14', 'Reparo de Placa', 35600, NULL),
-  ('iPhone', 'iPhone 14', 'Troca de Microfone', 13600, NULL),
-  ('iPhone', 'iPhone 14', 'Troca de Botões', 12200, NULL),
-  ('iPhone', 'iPhone 14', 'Troca de Vidro Traseiro', 26800, NULL),
-  ('iPhone', 'iPhone 14', 'Reparo Face ID / Biometria', 28200, NULL),
-  ('iPhone', 'iPhone 14', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 14', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 14 Pro Max', 'Troca de Bateria', 20200, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Reparo de Conector de Carga', 15400, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Troca de Alto-falante', 13000, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Troca de Câmera Traseira', 25000, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Troca de Câmera Frontal', 21600, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Reparo de Placa', 40600, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Troca de Microfone', 14800, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Troca de Botões', 13400, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Troca de Vidro Traseiro', 30800, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Reparo Face ID / Biometria', 33200, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Desoxidação (líquido)', 16000, NULL),
-  ('iPhone', 'iPhone 14 Pro Max', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 14 Plus', 'Troca de Bateria', 18200, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Reparo de Conector de Carga', 13900, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Troca de Alto-falante', 12000, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Troca de Câmera Traseira', 22000, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Troca de Câmera Frontal', 19100, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Reparo de Placa', 35600, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Troca de Microfone', 13600, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Troca de Botões', 12200, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Troca de Vidro Traseiro', 26800, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Reparo Face ID / Biometria', 28200, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 14 Plus', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 15', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 15', 'Troca de Bateria', 18600, NULL),
-  ('iPhone', 'iPhone 15', 'Reparo de Conector de Carga', 14200, NULL),
-  ('iPhone', 'iPhone 15', 'Troca de Alto-falante', 12200, NULL),
-  ('iPhone', 'iPhone 15', 'Troca de Câmera Traseira', 22500, NULL),
-  ('iPhone', 'iPhone 15', 'Troca de Câmera Frontal', 19500, NULL),
-  ('iPhone', 'iPhone 15', 'Reparo de Placa', 36300, NULL),
-  ('iPhone', 'iPhone 15', 'Troca de Microfone', 13900, NULL),
-  ('iPhone', 'iPhone 15', 'Troca de Botões', 12400, NULL),
-  ('iPhone', 'iPhone 15', 'Troca de Vidro Traseiro', 27400, NULL),
-  ('iPhone', 'iPhone 15', 'Reparo Face ID / Biometria', 29000, NULL),
-  ('iPhone', 'iPhone 15', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 15', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 15 Pro', 'Troca de Bateria', 20600, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Reparo de Conector de Carga', 15700, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Troca de Alto-falante', 13200, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Troca de Câmera Traseira', 25500, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Troca de Câmera Frontal', 22000, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Reparo de Placa', 41300, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Troca de Microfone', 15100, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Troca de Botões', 13600, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Troca de Vidro Traseiro', 31400, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Reparo Face ID / Biometria', 34000, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Desoxidação (líquido)', 16000, NULL),
-  ('iPhone', 'iPhone 15 Pro', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 15 Plus', 'Troca de Bateria', 18600, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Reparo de Conector de Carga', 14200, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Troca de Alto-falante', 12200, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Troca de Câmera Traseira', 22500, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Troca de Câmera Frontal', 19500, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Reparo de Placa', 36300, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Troca de Microfone', 13900, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Troca de Botões', 12400, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Troca de Vidro Traseiro', 27400, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Reparo Face ID / Biometria', 29000, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 15 Plus', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 15 Pro Max', 'Troca de Bateria', 20600, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Reparo de Conector de Carga', 15700, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Troca de Alto-falante', 13200, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Troca de Câmera Traseira', 25500, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Troca de Câmera Frontal', 22000, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Reparo de Placa', 41300, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Troca de Microfone', 15100, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Troca de Botões', 13600, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Troca de Vidro Traseiro', 31400, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Reparo Face ID / Biometria', 34000, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Desoxidação (líquido)', 16000, NULL),
-  ('iPhone', 'iPhone 15 Pro Max', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 16 Plus', 'Troca de Bateria', 19000, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Reparo de Conector de Carga', 14500, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Troca de Alto-falante', 12500, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Troca de Câmera Traseira', 23000, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Troca de Câmera Frontal', 20000, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Reparo de Placa', 37000, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Troca de Microfone', 14200, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Troca de Botões', 12700, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Troca de Vidro Traseiro', 28000, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Reparo Face ID / Biometria', 29800, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 16 Plus', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 16 Pro Max', 'Troca de Bateria', 21000, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Reparo de Conector de Carga', 16000, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Troca de Alto-falante', 13500, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Troca de Câmera Traseira', 26000, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Troca de Câmera Frontal', 22500, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Reparo de Placa', 42000, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Troca de Microfone', 15400, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Troca de Botões', 13900, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Troca de Vidro Traseiro', 32000, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Reparo Face ID / Biometria', 34800, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Desoxidação (líquido)', 16000, NULL),
-  ('iPhone', 'iPhone 16 Pro Max', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 16 Pro', 'Troca de Bateria', 21000, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Reparo de Conector de Carga', 16000, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Troca de Alto-falante', 13500, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Troca de Câmera Traseira', 26000, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Troca de Câmera Frontal', 22500, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Reparo de Placa', 42000, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Troca de Microfone', 15400, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Troca de Botões', 13900, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Troca de Vidro Traseiro', 32000, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Reparo Face ID / Biometria', 34800, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Desoxidação (líquido)', 16000, NULL),
-  ('iPhone', 'iPhone 16 Pro', 'Diagnóstico', 5000, NULL),
-  ('iPhone', 'iPhone 16', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('iPhone', 'iPhone 16', 'Troca de Bateria', 19000, NULL),
-  ('iPhone', 'iPhone 16', 'Reparo de Conector de Carga', 14500, NULL),
-  ('iPhone', 'iPhone 16', 'Troca de Alto-falante', 12500, NULL),
-  ('iPhone', 'iPhone 16', 'Troca de Câmera Traseira', 23000, NULL),
-  ('iPhone', 'iPhone 16', 'Troca de Câmera Frontal', 20000, NULL),
-  ('iPhone', 'iPhone 16', 'Reparo de Placa', 37000, NULL),
-  ('iPhone', 'iPhone 16', 'Troca de Microfone', 14200, NULL),
-  ('iPhone', 'iPhone 16', 'Troca de Botões', 12700, NULL),
-  ('iPhone', 'iPhone 16', 'Troca de Vidro Traseiro', 28000, NULL),
-  ('iPhone', 'iPhone 16', 'Reparo Face ID / Biometria', 29800, NULL),
-  ('iPhone', 'iPhone 16', 'Desoxidação (líquido)', 14000, NULL),
-  ('iPhone', 'iPhone 16', 'Diagnóstico', 5000, NULL),
-  ('Samsung', 'Galaxy S23', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('Samsung', 'Galaxy S23', 'Troca de Bateria', 15000, NULL),
-  ('Samsung', 'Galaxy S23', 'Reparo de Conector de Carga', 11500, NULL),
-  ('Samsung', 'Galaxy S23', 'Troca de Alto-falante', 10200, NULL),
-  ('Samsung', 'Galaxy S23', 'Troca de Câmera Traseira', 17500, NULL),
-  ('Samsung', 'Galaxy S23', 'Troca de Câmera Frontal', 15200, NULL),
-  ('Samsung', 'Galaxy S23', 'Reparo de Placa', 28500, NULL),
-  ('Samsung', 'Galaxy S23', 'Troca de Microfone', 11500, NULL),
-  ('Samsung', 'Galaxy S23', 'Troca de Botões', 10200, NULL),
-  ('Samsung', 'Galaxy S23', 'Troca de Vidro Traseiro', 21000, NULL),
-  ('Samsung', 'Galaxy S23', 'Reparo Face ID / Biometria', 20800, NULL),
-  ('Samsung', 'Galaxy S23', 'Desoxidação (líquido)', 12000, NULL),
-  ('Samsung', 'Galaxy S23', 'Diagnóstico', 5000, NULL),
-  ('Samsung', 'Galaxy A54', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('Samsung', 'Galaxy A54', 'Troca de Bateria', 15000, NULL),
-  ('Samsung', 'Galaxy A54', 'Reparo de Conector de Carga', 11500, NULL),
-  ('Samsung', 'Galaxy A54', 'Troca de Alto-falante', 10200, NULL),
-  ('Samsung', 'Galaxy A54', 'Troca de Câmera Traseira', 17500, NULL),
-  ('Samsung', 'Galaxy A54', 'Troca de Câmera Frontal', 15200, NULL),
-  ('Samsung', 'Galaxy A54', 'Reparo de Placa', 28500, NULL),
-  ('Samsung', 'Galaxy A54', 'Troca de Microfone', 11500, NULL),
-  ('Samsung', 'Galaxy A54', 'Troca de Botões', 10200, NULL),
-  ('Samsung', 'Galaxy A54', 'Troca de Vidro Traseiro', 21000, NULL),
-  ('Samsung', 'Galaxy A54', 'Reparo Face ID / Biometria', 20800, NULL),
-  ('Samsung', 'Galaxy A54', 'Desoxidação (líquido)', 12000, NULL),
-  ('Samsung', 'Galaxy A54', 'Diagnóstico', 5000, NULL),
-  ('Motorola', 'Moto G84', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('Motorola', 'Moto G84', 'Troca de Bateria', 15000, NULL),
-  ('Motorola', 'Moto G84', 'Reparo de Conector de Carga', 11500, NULL),
-  ('Motorola', 'Moto G84', 'Troca de Alto-falante', 10200, NULL),
-  ('Motorola', 'Moto G84', 'Troca de Câmera Traseira', 17500, NULL),
-  ('Motorola', 'Moto G84', 'Troca de Câmera Frontal', 15200, NULL),
-  ('Motorola', 'Moto G84', 'Reparo de Placa', 28500, NULL),
-  ('Motorola', 'Moto G84', 'Troca de Microfone', 11500, NULL),
-  ('Motorola', 'Moto G84', 'Troca de Botões', 10200, NULL),
-  ('Motorola', 'Moto G84', 'Troca de Vidro Traseiro', 21000, NULL),
-  ('Motorola', 'Moto G84', 'Reparo Face ID / Biometria', 20800, NULL),
-  ('Motorola', 'Moto G84', 'Desoxidação (líquido)', 12000, NULL),
-  ('Motorola', 'Moto G84', 'Diagnóstico', 5000, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Troca de Tela', 0, 'Preço via opções de tela'),
-  ('Xiaomi', 'Redmi Note 13', 'Troca de Bateria', 15000, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Reparo de Conector de Carga', 11500, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Troca de Alto-falante', 10200, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Troca de Câmera Traseira', 17500, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Troca de Câmera Frontal', 15200, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Reparo de Placa', 28500, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Troca de Microfone', 11500, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Troca de Botões', 10200, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Troca de Vidro Traseiro', 21000, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Reparo Face ID / Biometria', 20800, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Desoxidação (líquido)', 12000, NULL),
-  ('Xiaomi', 'Redmi Note 13', 'Diagnóstico', 5000, NULL)
-),
-rows AS (
-  SELECT s.store_id, m.id AS model_id, sv.id AS service_id, r.price_cents, r.notes
-  FROM raw r
-  JOIN brands b ON b.name = r.brand_name
-  JOIN models m ON m.brand_id=b.id AND m.name=r.model_name
-  JOIN services sv ON sv.name = r.service_name
-  JOIN store_row s ON TRUE
-)
-INSERT INTO store_model_service_prices (store_id, model_id, service_id, price_cents, notes)
-SELECT store_id, model_id, service_id, price_cents, notes
-FROM rows
-ON CONFLICT (store_id, model_id, service_id)
-DO UPDATE SET price_cents=EXCLUDED.price_cents, notes=EXCLUDED.notes;
+-- Store supports which models (single-store MVP)
+-- In this MVP, the city is fixed (Teixeira de Freitas) and there is only one store.
+-- We link the store to all seeded models so the public flow can list brands/models normally.
+INSERT INTO store_models (store_id, model_id)
+SELECT s.id, m.id
+FROM stores s
+CROSS JOIN models m
+WHERE s.name = 'ConSERTE FACIL'
+ON CONFLICT DO NOTHING;
 
-COMMIT;
+-- Prices (store + model + service)
+-- Helper rule: you only get store results if store_models link exists,
+-- and checkout works only for services with prices inserted.
+
+-- TECHFIX BH — Galaxy S24 Ultra (lots of services)
+INSERT INTO store_model_service_prices (store_id, model_id, service_id, price_cents, currency)
+SELECT s.id, m.id, sv.id, p.price_cents, 'BRL'
+FROM (VALUES
+  ('ConSERTE FACIL','Galaxy S24 Ultra','Troca de Tela',35900),
+  ('ConSERTE FACIL','Galaxy S24 Ultra','Troca de Bateria',18900),
+  ('ConSERTE FACIL','Galaxy S24 Ultra','Reparo de Conector de Carga',12900),
+  ('ConSERTE FACIL','Galaxy S24 Ultra','Troca de Alto-falante',9900),
+  ('ConSERTE FACIL','Galaxy S24 Ultra','Troca de Microfone',9500),
+  ('ConSERTE FACIL','Galaxy S24 Ultra','Troca de Câmera Traseira',29900),
+  ('ConSERTE FACIL','Galaxy S24 Ultra','Troca de Câmera Frontal',21900),
+  ('ConSERTE FACIL','Galaxy S24 Ultra','Troca de Botões',11000),
+  ('ConSERTE FACIL','Galaxy S24 Ultra','Troca de Vidro Traseiro',24900),
+  ('ConSERTE FACIL','Galaxy S24 Ultra','Reparo de Placa',46900),
+  ('ConSERTE FACIL','Galaxy S24 Ultra','Diagnóstico',7000)
+) AS p(store_name, model_name, service_name, price_cents)
+JOIN stores s ON s.name = p.store_name
+JOIN models m ON m.name = p.model_name
+JOIN services sv ON sv.name = p.service_name
+ON CONFLICT (store_id, model_id, service_id) DO NOTHING;
+
+-- TECHFIX BH — iPhone 14 (includes Face ID + vidro traseiro)
+INSERT INTO store_model_service_prices (store_id, model_id, service_id, price_cents, currency)
+SELECT s.id, m.id, sv.id, p.price_cents, 'BRL'
+FROM (VALUES
+  ('ConSERTE FACIL','iPhone 14','Troca de Tela',43900),
+  ('ConSERTE FACIL','iPhone 14','Troca de Bateria',22900),
+  ('ConSERTE FACIL','iPhone 14','Reparo de Conector de Carga',14900),
+  ('ConSERTE FACIL','iPhone 14','Troca de Alto-falante',12900),
+  ('ConSERTE FACIL','iPhone 14','Troca de Câmera Traseira',33900),
+  ('ConSERTE FACIL','iPhone 14','Troca de Câmera Frontal',25900),
+  ('ConSERTE FACIL','iPhone 14','Troca de Vidro Traseiro',27900),
+  ('ConSERTE FACIL','iPhone 14','Reparo Face ID / Biometria',34900),
+  ('ConSERTE FACIL','iPhone 14','Diagnóstico',7000)
+) AS p(store_name, model_name, service_name, price_cents)
+JOIN stores s ON s.name = p.store_name
+JOIN models m ON m.name = p.model_name
+JOIN services sv ON sv.name = p.service_name
+ON CONFLICT (store_id, model_id, service_id) DO NOTHING;
+
+-- TECHFIX BH — Pixel 8
+INSERT INTO store_model_service_prices (store_id, model_id, service_id, price_cents, currency)
+SELECT s.id, m.id, sv.id, p.price_cents, 'BRL'
+FROM (VALUES
+  ('ConSERTE FACIL','Pixel 8','Troca de Tela',38900),
+  ('ConSERTE FACIL','Pixel 8','Troca de Bateria',20900),
+  ('ConSERTE FACIL','Pixel 8','Reparo de Conector de Carga',13900),
+  ('ConSERTE FACIL','Pixel 8','Diagnóstico',7000)
+) AS p(store_name, model_name, service_name, price_cents)
+JOIN stores s ON s.name = p.store_name
+JOIN models m ON m.name = p.model_name
+JOIN services sv ON sv.name = p.service_name
+ON CONFLICT (store_id, model_id, service_id) DO NOTHING;
+
+-- CELULARPRO BH — Galaxy S23
+INSERT INTO store_model_service_prices (store_id, model_id, service_id, price_cents, currency)
+SELECT s.id, m.id, sv.id, p.price_cents, 'BRL'
+FROM (VALUES
+  ('ConSERTE FACIL','Galaxy S23','Troca de Tela',32900),
+  ('ConSERTE FACIL','Galaxy S23','Troca de Bateria',16900),
+  ('ConSERTE FACIL','Galaxy S23','Reparo de Conector de Carga',11900),
+  ('ConSERTE FACIL','Galaxy S23','Troca de Microfone',8900),
+  ('ConSERTE FACIL','Galaxy S23','Diagnóstico',6000)
+) AS p(store_name, model_name, service_name, price_cents)
+JOIN stores s ON s.name = p.store_name
+JOIN models m ON m.name = p.model_name
+JOIN services sv ON sv.name = p.service_name
+ON CONFLICT (store_id, model_id, service_id) DO NOTHING;
+
+-- CELULARPRO BH — Moto G84
+INSERT INTO store_model_service_prices (store_id, model_id, service_id, price_cents, currency)
+SELECT s.id, m.id, sv.id, p.price_cents, 'BRL'
+FROM (VALUES
+  ('ConSERTE FACIL','Moto G84','Troca de Tela',20900),
+  ('ConSERTE FACIL','Moto G84','Troca de Bateria',12900),
+  ('ConSERTE FACIL','Moto G84','Reparo de Conector de Carga',9900),
+  ('ConSERTE FACIL','Moto G84','Troca de Alto-falante',7900),
+  ('ConSERTE FACIL','Moto G84','Diagnóstico',6000)
+) AS p(store_name, model_name, service_name, price_cents)
+JOIN stores s ON s.name = p.store_name
+JOIN models m ON m.name = p.model_name
+JOIN services sv ON sv.name = p.service_name
+ON CONFLICT (store_id, model_id, service_id) DO NOTHING;
+
+-- CELULARPRO BH — Redmi Note 13
+INSERT INTO store_model_service_prices (store_id, model_id, service_id, price_cents, currency)
+SELECT s.id, m.id, sv.id, p.price_cents, 'BRL'
+FROM (VALUES
+  ('ConSERTE FACIL','Redmi Note 13','Troca de Tela',23900),
+  ('ConSERTE FACIL','Redmi Note 13','Troca de Bateria',13900),
+  ('ConSERTE FACIL','Redmi Note 13','Reparo de Conector de Carga',9900),
+  ('ConSERTE FACIL','Redmi Note 13','Troca de Microfone',7900),
+  ('ConSERTE FACIL','Redmi Note 13','Diagnóstico',6000)
+) AS p(store_name, model_name, service_name, price_cents)
+JOIN stores s ON s.name = p.store_name
+JOIN models m ON m.name = p.model_name
+JOIN services sv ON sv.name = p.service_name
+ON CONFLICT (store_id, model_id, service_id) DO NOTHING;
+
+-- TECHFIX SP — iPhone 15 Pro
+INSERT INTO store_model_service_prices (store_id, model_id, service_id, price_cents, currency)
+SELECT s.id, m.id, sv.id, p.price_cents, 'BRL'
+FROM (VALUES
+  ('ConSERTE FACIL','iPhone 15 Pro','Troca de Tela',49900),
+  ('ConSERTE FACIL','iPhone 15 Pro','Troca de Bateria',24900),
+  ('ConSERTE FACIL','iPhone 15 Pro','Troca de Vidro Traseiro',31900),
+  ('ConSERTE FACIL','iPhone 15 Pro','Reparo Face ID / Biometria',37900),
+  ('ConSERTE FACIL','iPhone 15 Pro','Diagnóstico',8000)
+) AS p(store_name, model_name, service_name, price_cents)
+JOIN stores s ON s.name = p.store_name
+JOIN models m ON m.name = p.model_name
+JOIN services sv ON sv.name = p.service_name
+ON CONFLICT (store_id, model_id, service_id) DO NOTHING;
+
+-- TECHFIX SP — OnePlus 12
+INSERT INTO store_model_service_prices (store_id, model_id, service_id, price_cents, currency)
+SELECT s.id, m.id, sv.id, p.price_cents, 'BRL'
+FROM (VALUES
+  ('ConSERTE FACIL','OnePlus 12','Troca de Tela',37900),
+  ('ConSERTE FACIL','OnePlus 12','Troca de Bateria',19900),
+  ('ConSERTE FACIL','OnePlus 12','Reparo de Conector de Carga',12900),
+  ('ConSERTE FACIL','OnePlus 12','Diagnóstico',8000)
+) AS p(store_name, model_name, service_name, price_cents)
+JOIN stores s ON s.name = p.store_name
+JOIN models m ON m.name = p.model_name
+JOIN services sv ON sv.name = p.service_name
+ON CONFLICT (store_id, model_id, service_id) DO NOTHING;
+
+-- FASTREPAIR SP — Pixel 7 + Huawei P50 Pro
+INSERT INTO store_model_service_prices (store_id, model_id, service_id, price_cents, currency)
+SELECT s.id, m.id, sv.id, p.price_cents, 'BRL'
+FROM (VALUES
+  ('ConSERTE FACIL','Pixel 7','Troca de Tela',32900),
+  ('ConSERTE FACIL','Pixel 7','Troca de Bateria',17900),
+  ('ConSERTE FACIL','Pixel 7','Diagnóstico',7000),
+
+  ('ConSERTE FACIL','P50 Pro','Troca de Tela',38900),
+  ('ConSERTE FACIL','P50 Pro','Troca de Bateria',21900),
+  ('ConSERTE FACIL','P50 Pro','Desoxidação (líquido)',15900),
+  ('ConSERTE FACIL','P50 Pro','Diagnóstico',7000)
+) AS p(store_name, model_name, service_name, price_cents)
+JOIN stores s ON s.name = p.store_name
+JOIN models m ON m.name = p.model_name
+JOIN services sv ON sv.name = p.service_name
+ON CONFLICT (store_id, model_id, service_id) DO NOTHING;

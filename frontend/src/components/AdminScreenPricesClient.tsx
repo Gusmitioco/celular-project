@@ -190,7 +190,7 @@ export function AdminScreenPricesClient() {
     const items = dirtyIds.map((id) => {
       const available = !!editAvailable[id];
       const cents = brlToCents(editPrice[id] ?? "") ?? 0;
-      return { screenOptionId: id, available, priceCents: available ? cents : 0 };
+      return { screenOptionId: id, available, priceCents: cents };
     });
 
     const res = await fetch(`${apiBaseUrl}/api/admin/screen-prices/bulk`, {
